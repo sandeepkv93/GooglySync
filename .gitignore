@@ -13,6 +13,7 @@ bazel-*
 
 # Protobuf/gRPC generated
 *.pb.go
+!internal/ipc/gen/*.pb.go
 *.pb.gw.go
 *.pb.validate.go
 
