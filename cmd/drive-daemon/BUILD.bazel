@@ -1,8 +1,15 @@
-load("@rules_go//go:def.bzl", "go_binary")
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_binary(
     name = "drive-daemon",
-    srcs = ["main.go"],
+    embed = [":drive-daemon_lib"],
     importpath = "github.com/sandeepkv93/GooglySync/cmd/drive-daemon",
     visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "drive-daemon_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/sandeepkv93/GooglySync/cmd/drive-daemon",
+    visibility = ["//visibility:private"],
 )

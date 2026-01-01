@@ -1,8 +1,15 @@
-load("@rules_go//go:def.bzl", "go_binary")
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_binary(
     name = "drive-fuse",
-    srcs = ["main.go"],
+    embed = [":drive-fuse_lib"],
     importpath = "github.com/sandeepkv93/GooglySync/cmd/drive-fuse",
     visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "drive-fuse_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/sandeepkv93/GooglySync/cmd/drive-fuse",
+    visibility = ["//visibility:private"],
 )

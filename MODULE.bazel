@@ -8,5 +8,5 @@ bazel_dep(name = "gazelle", version = "0.36.0")
 bazel_dep(name = "rules_pkg", version = "1.0.1")
 
 go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
-# Use host Go until 1.25.x is released and supported by rules_go downloads.
-go_sdk.host()
+# Bazel uses a supported Go SDK until rules_go supports Go 1.25.x.
+go_sdk.download(version = "1.23.2")
