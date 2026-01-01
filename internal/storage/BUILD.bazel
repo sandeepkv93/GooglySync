@@ -3,10 +3,12 @@ load("@rules_go//go:def.bzl", "go_library")
 go_library(
     name = "storage",
     srcs = ["storage.go"],
+    embedsrcs = ["migrations/00001_init.sql"],
     importpath = "github.com/sandeepkv93/googlysync/internal/storage",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/config",
+        "@com_github_pressly_goose_v3//:goose",
         "@org_modernc_sqlite//:sqlite",
         "@org_uber_go_zap//:zap",
     ],

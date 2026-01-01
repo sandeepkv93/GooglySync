@@ -1,15 +1,22 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
+	"embed"
 	"os"
 	"path/filepath"
 
-	"go.uber.org/zap"
 	_ "modernc.org/sqlite"
+	"go.uber.org/zap"
+
+	"github.com/pressly/goose/v3"
 
 	"github.com/sandeepkv93/googlysync/internal/config"
 )
+
+//go:embed migrations/*.sql
+var migrationsFS embed.FS
 
 // Storage wraps access to the local metadata store.
 type Storage struct {
@@ -27,6 +34,11 @@ func NewStorage(cfg *config.Config, logger *zap.Logger) (*Storage, error) {
 		return nil, err
 	}
 
+	if err := migrate(context.Background(), db, logger); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+
 	logger.Info("storage initialized", zap.String("path", cfg.DatabasePath))
 	return &Storage{DB: db}, nil
 }
@@ -37,4 +49,18 @@ func (s *Storage) Close() error {
 		return nil
 	}
 	return s.DB.Close()
+}
+
+func migrate(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
+	goose.SetBaseFS(migrationsFS)
+	if err := goose.SetDialect("sqlite3"); err != nil {
+		return err
+	}
+
+	logger.Info("applying migrations")
+	if err := goose.UpContext(ctx, db, "migrations"); err != nil {
+		return err
+	}
+	logger.Info("migrations complete")
+	return nil
 }
