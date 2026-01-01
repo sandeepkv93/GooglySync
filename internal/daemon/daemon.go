@@ -50,6 +50,11 @@ func NewDaemon(
 func (d *Daemon) Run(ctx context.Context) error {
 	d.Logger.Info("daemon running")
 
+	syncCtx, syncCancel := context.WithCancel(ctx)
+	if d.Sync != nil {
+		go d.Sync.Run(syncCtx)
+	}
+
 	errCh := make(chan error, 1)
 	go func() {
 		if d.IPC == nil {
@@ -61,12 +66,14 @@ func (d *Daemon) Run(ctx context.Context) error {
 
 	select {
 	case <-ctx.Done():
+		syncCancel()
 		if d.IPC != nil {
 			d.IPC.Stop()
 		}
 		d.Logger.Info("daemon shutting down")
 		return d.Close()
 	case err := <-errCh:
+		syncCancel()
 		if err != nil {
 			return err
 		}

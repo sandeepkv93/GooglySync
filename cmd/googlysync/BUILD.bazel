@@ -24,6 +24,7 @@ go_library(
         "//internal/ipc",
         "//internal/ipc/gen",
         "//internal/logging",
+        "//internal/status",
         "//internal/storage",
         "//internal/sync",
         "@com_github_charmbracelet_bubbletea//:bubbletea",

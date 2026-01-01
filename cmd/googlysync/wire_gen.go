@@ -13,6 +13,7 @@ import (
 	"github.com/sandeepkv93/googlysync/internal/fswatch"
 	"github.com/sandeepkv93/googlysync/internal/ipc"
 	"github.com/sandeepkv93/googlysync/internal/logging"
+	"github.com/sandeepkv93/googlysync/internal/status"
 	"github.com/sandeepkv93/googlysync/internal/storage"
 	"github.com/sandeepkv93/googlysync/internal/sync"
 )
@@ -36,7 +37,8 @@ func InitializeDaemon(opts config.Options) (*daemon.Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
-	engine, err := sync.NewEngine(logger, storageStorage)
+	store := status.NewStore()
+	engine, err := sync.NewEngine(logger, storageStorage, store)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +46,7 @@ func InitializeDaemon(opts config.Options) (*daemon.Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
-	server, err := ipc.NewServer(configConfig, logger)
+	server, err := ipc.NewServer(configConfig, logger, store)
 	if err != nil {
 		return nil, err
 	}

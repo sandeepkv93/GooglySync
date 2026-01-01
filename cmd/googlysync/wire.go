@@ -14,6 +14,7 @@ import (
 	"github.com/sandeepkv93/googlysync/internal/fswatch"
 	"github.com/sandeepkv93/googlysync/internal/ipc"
 	"github.com/sandeepkv93/googlysync/internal/logging"
+	"github.com/sandeepkv93/googlysync/internal/status"
 	"github.com/sandeepkv93/googlysync/internal/storage"
 	syncer "github.com/sandeepkv93/googlysync/internal/sync"
 )
@@ -23,6 +24,7 @@ func InitializeDaemon(opts config.Options) (*daemon.Daemon, error) {
 		config.NewConfigWithOptions,
 		logging.NewLogger,
 		storage.NewStorage,
+		status.NewStore,
 		auth.NewService,
 		fswatch.NewWatcher,
 		syncer.NewEngine,

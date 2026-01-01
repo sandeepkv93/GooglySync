@@ -6,6 +6,7 @@ go_library(
     importpath = "github.com/sandeepkv93/googlysync/internal/sync",
     visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/status",
         "//internal/storage",
         "@org_uber_go_zap//:zap",
     ],
