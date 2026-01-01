@@ -1,0 +1,42 @@
+version: "3"
+
+tasks:
+  default:
+    desc: List tasks
+    cmds:
+      - task --list
+
+  go:build:
+    desc: Build daemon with Go toolchain
+    cmds:
+      - go build ./cmd/drive-daemon
+
+  go:test:
+    desc: Run Go tests
+    cmds:
+      - go test ./...
+
+  go:tidy:
+    desc: Tidy Go modules
+    cmds:
+      - go mod tidy
+
+  bazel:build:
+    desc: Build all Bazel targets
+    cmds:
+      - bazelisk build //...
+
+  bazel:test:
+    desc: Run Bazel tests
+    cmds:
+      - bazelisk test //...
+
+  gazelle:
+    desc: Run Gazelle to update BUILD files
+    cmds:
+      - bazelisk run //:gazelle
+
+  clean:
+    desc: Clean Bazel outputs
+    cmds:
+      - bazelisk clean --expunge
