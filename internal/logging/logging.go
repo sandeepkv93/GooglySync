@@ -1,8 +1,12 @@
 package logging
 
 import (
+	"os"
+	"path/filepath"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/sandeepkv93/googlysync/internal/config"
 )
@@ -14,11 +18,28 @@ func NewLogger(cfg *config.Config) (*zap.Logger, error) {
 		return nil, err
 	}
 
-	zapCfg := zap.NewProductionConfig()
-	zapCfg.Level = level
-	zapCfg.Encoding = "json"
-	zapCfg.EncoderConfig.TimeKey = "ts"
-	zapCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	encoderCfg := zap.NewProductionEncoderConfig()
+	encoderCfg.TimeKey = "ts"
+	encoderCfg.EncodeTime = zapcore.ISO8601TimeEncoder
+	encoder := zapcore.NewJSONEncoder(encoderCfg)
 
-	return zapCfg.Build()
+	var ws zapcore.WriteSyncer
+	if cfg.LogFilePath != "" {
+		if err := os.MkdirAll(filepath.Dir(cfg.LogFilePath), 0o700); err != nil {
+			return nil, err
+		}
+		lj := &lumberjack.Logger{
+			Filename:   cfg.LogFilePath,
+			MaxSize:    cfg.LogFileMaxMB,
+			MaxBackups: cfg.LogFileMaxBackups,
+			MaxAge:     cfg.LogFileMaxAgeDays,
+			Compress:   true,
+		}
+		ws = zapcore.AddSync(lj)
+	} else {
+		ws = zapcore.AddSync(os.Stdout)
+	}
+
+	core := zapcore.NewCore(encoder, ws, level)
+	return zap.New(core), nil
 }

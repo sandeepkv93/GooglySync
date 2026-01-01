@@ -5,18 +5,23 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 const appDirName = "drive-client"
 
 // Config holds basic runtime configuration.
 type Config struct {
-	AppName      string
-	ConfigDir    string
-	DataDir      string
-	LogLevel     string
-	DatabasePath string
-	ConfigFile   string
+	AppName           string
+	ConfigDir         string
+	DataDir           string
+	LogLevel          string
+	DatabasePath      string
+	ConfigFile        string
+	LogFilePath       string
+	LogFileMaxMB      int
+	LogFileMaxBackups int
+	LogFileMaxAgeDays int
 }
 
 // NewConfig builds a default config from XDG paths and environment.
@@ -47,11 +52,15 @@ func NewConfig() (*Config, error) {
 	dataDir := filepath.Join(dataHome, appDirName)
 
 	return &Config{
-		AppName:      "googlysync",
-		ConfigDir:    configDir,
-		DataDir:      dataDir,
-		LogLevel:     "info",
-		DatabasePath: filepath.Join(dataDir, "drive.db"),
+		AppName:           "googlysync",
+		ConfigDir:         configDir,
+		DataDir:           dataDir,
+		LogLevel:          "info",
+		DatabasePath:      filepath.Join(dataDir, "drive.db"),
+		LogFilePath:       filepath.Join(dataDir, "logs", "daemon.jsonl"),
+		LogFileMaxMB:      10,
+		LogFileMaxBackups: 5,
+		LogFileMaxAgeDays: 7,
 	}, nil
 }
 
@@ -62,14 +71,18 @@ type Options struct {
 }
 
 type fileConfig struct {
-	AppName      string `json:"app_name"`
-	ConfigDir    string `json:"config_dir"`
-	DataDir      string `json:"data_dir"`
-	LogLevel     string `json:"log_level"`
-	DatabasePath string `json:"database_path"`
+	AppName           string `json:"app_name"`
+	ConfigDir         string `json:"config_dir"`
+	DataDir           string `json:"data_dir"`
+	LogLevel          string `json:"log_level"`
+	DatabasePath      string `json:"database_path"`
+	LogFilePath       string `json:"log_file_path"`
+	LogFileMaxMB      int    `json:"log_file_max_mb"`
+	LogFileMaxBackups int    `json:"log_file_max_backups"`
+	LogFileMaxAgeDays int    `json:"log_file_max_age_days"`
 }
 
-// NewConfigWithOptions resolves config and applies overrides from options.
+// NewConfigWithOptions resolves config and applies overrides from options and environment.
 func NewConfigWithOptions(opts Options) (*Config, error) {
 	cfg, err := NewConfig()
 	if err != nil {
@@ -82,6 +95,8 @@ func NewConfigWithOptions(opts Options) (*Config, error) {
 		}
 		cfg.ConfigFile = opts.ConfigPath
 	}
+
+	applyEnv(cfg)
 
 	if opts.LogLevel != "" {
 		cfg.LogLevel = opts.LogLevel
@@ -116,6 +131,42 @@ func applyConfigFile(cfg *Config, path string) error {
 	if fc.DatabasePath != "" {
 		cfg.DatabasePath = fc.DatabasePath
 	}
+	if fc.LogFilePath != "" {
+		cfg.LogFilePath = fc.LogFilePath
+	}
+	if fc.LogFileMaxMB > 0 {
+		cfg.LogFileMaxMB = fc.LogFileMaxMB
+	}
+	if fc.LogFileMaxBackups > 0 {
+		cfg.LogFileMaxBackups = fc.LogFileMaxBackups
+	}
+	if fc.LogFileMaxAgeDays > 0 {
+		cfg.LogFileMaxAgeDays = fc.LogFileMaxAgeDays
+	}
 
 	return nil
+}
+
+func applyEnv(cfg *Config) {
+	if v := os.Getenv("GOOGLYSYNC_LOG_LEVEL"); v != "" {
+		cfg.LogLevel = v
+	}
+	if v := os.Getenv("GOOGLYSYNC_LOG_FILE"); v != "" {
+		cfg.LogFilePath = v
+	}
+	if v := os.Getenv("GOOGLYSYNC_LOG_MAX_MB"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil && i > 0 {
+			cfg.LogFileMaxMB = i
+		}
+	}
+	if v := os.Getenv("GOOGLYSYNC_LOG_MAX_BACKUPS"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil && i > 0 {
+			cfg.LogFileMaxBackups = i
+		}
+	}
+	if v := os.Getenv("GOOGLYSYNC_LOG_MAX_AGE_DAYS"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil && i > 0 {
+			cfg.LogFileMaxAgeDays = i
+		}
+	}
 }

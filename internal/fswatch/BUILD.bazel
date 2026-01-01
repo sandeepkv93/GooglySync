@@ -5,5 +5,5 @@ go_library(
     srcs = ["fswatch.go"],
     importpath = "github.com/sandeepkv93/googlysync/internal/fswatch",
     visibility = ["//:__subpackages__"],
-    deps = ["@org_uber_go_zap//:go_default_library"],
+    deps = ["@org_uber_go_zap//:zap"],
 )

@@ -19,6 +19,6 @@ go_library(
     deps = [
         "//internal/config",
         "//internal/logging",
-        "@org_uber_go_zap//:go_default_library",
+        "@org_uber_go_zap//:zap",
     ],
 )
