@@ -1,7 +1,7 @@
-# PRD: GooglySync Desktop Client for Pop!_OS 24
+# PRD: googlysync Desktop Client for Pop!_OS 24
 
 ## Overview
-Build a native-like GooglySync desktop client for Pop!_OS 24 that delivers parity with core features from Google Drive clients on Windows and macOS. The app will provide secure Google account sign-in, background sync, offline access, system integration, and a reliable file system experience for end users who need Drive integrated into their Linux desktop workflow.
+Build a native-like googlysync desktop client for Pop!_OS 24 that delivers parity with core features from Google Drive clients on Windows and macOS. The app will provide secure Google account sign-in, background sync, offline access, system integration, and a reliable file system experience for end users who need Drive integrated into their Linux desktop workflow.
 
 ## Goals
 - Provide feature parity with Windows/macOS Google Drive clients for everyday productivity.

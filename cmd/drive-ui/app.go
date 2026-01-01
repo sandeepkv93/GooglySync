@@ -3,7 +3,7 @@ package main
 import (
 	"go.uber.org/zap"
 
-	"github.com/sandeepkv93/GooglySync/internal/config"
+	"github.com/sandeepkv93/googlysync/internal/config"
 )
 
 // UIApp is a placeholder for future GTK app wiring.

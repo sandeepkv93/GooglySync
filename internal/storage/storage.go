@@ -8,7 +8,7 @@ import (
 	_ "modernc.org/sqlite"
 	"go.uber.org/zap"
 
-	"github.com/sandeepkv93/GooglySync/internal/config"
+	"github.com/sandeepkv93/googlysync/internal/config"
 )
 
 // Storage wraps access to the local metadata store.

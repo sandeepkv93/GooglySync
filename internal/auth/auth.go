@@ -3,7 +3,7 @@ package auth
 import (
 	"go.uber.org/zap"
 
-	"github.com/sandeepkv93/GooglySync/internal/storage"
+	"github.com/sandeepkv93/googlysync/internal/storage"
 )
 
 // Service handles auth and token lifecycle.

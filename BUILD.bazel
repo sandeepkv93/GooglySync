@@ -1,6 +1,6 @@
 load("@gazelle//:def.bzl", "gazelle")
 
-# gazelle:prefix github.com/sandeepkv93/GooglySync
+# gazelle:prefix github.com/sandeepkv93/googlysync
 
 gazelle(
     name = "gazelle",

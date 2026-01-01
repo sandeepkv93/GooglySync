@@ -3,11 +3,11 @@ package daemon
 import (
 	"go.uber.org/zap"
 
-	"github.com/sandeepkv93/GooglySync/internal/auth"
-	"github.com/sandeepkv93/GooglySync/internal/config"
-	"github.com/sandeepkv93/GooglySync/internal/fswatch"
-	syncer "github.com/sandeepkv93/GooglySync/internal/sync"
-	"github.com/sandeepkv93/GooglySync/internal/storage"
+	"github.com/sandeepkv93/googlysync/internal/auth"
+	"github.com/sandeepkv93/googlysync/internal/config"
+	"github.com/sandeepkv93/googlysync/internal/fswatch"
+	syncer "github.com/sandeepkv93/googlysync/internal/sync"
+	"github.com/sandeepkv93/googlysync/internal/storage"
 )
 
 // Daemon wires together core services.

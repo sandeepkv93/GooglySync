@@ -1,4 +1,4 @@
-module github.com/sandeepkv93/GooglySync
+module github.com/sandeepkv93/googlysync
 
 go 1.25
 

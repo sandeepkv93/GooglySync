@@ -1,4 +1,4 @@
-# Best Tech Stack: GooglySync Desktop Client (Pop!_OS 24)
+# Best Tech Stack: googlysync Desktop Client (Pop!_OS 24)
 
 ## Summary
 A Go-first architecture with a native GNOME UI and a dedicated sync daemon, built with Bazel. This stack optimizes performance, native integration, and long-term maintainability on Pop!_OS 24.

@@ -7,8 +7,8 @@
 package main
 
 import (
-	"github.com/sandeepkv93/GooglySync/internal/config"
-	"github.com/sandeepkv93/GooglySync/internal/logging"
+	"github.com/sandeepkv93/googlysync/internal/config"
+	"github.com/sandeepkv93/googlysync/internal/logging"
 )
 
 // Injectors from wire.go:

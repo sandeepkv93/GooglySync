@@ -4,7 +4,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/sandeepkv93/GooglySync/internal/config"
+	"github.com/sandeepkv93/googlysync/internal/config"
 )
 
 // NewLogger builds a structured logger based on config.

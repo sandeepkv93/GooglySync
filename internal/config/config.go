@@ -45,7 +45,7 @@ func NewConfig() (*Config, error) {
 	dataDir := filepath.Join(dataHome, appDirName)
 
 	return &Config{
-		AppName:      "GooglySync",
+		AppName:      "googlysync",
 		ConfigDir:    configDir,
 		DataDir:      dataDir,
 		LogLevel:     "info",

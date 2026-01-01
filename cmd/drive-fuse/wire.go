@@ -8,8 +8,8 @@ package main
 import (
 	"github.com/google/wire"
 
-	"github.com/sandeepkv93/GooglySync/internal/config"
-	"github.com/sandeepkv93/GooglySync/internal/logging"
+	"github.com/sandeepkv93/googlysync/internal/config"
+	"github.com/sandeepkv93/googlysync/internal/logging"
 )
 
 func InitializeFUSE() (*FUSEApp, error) {

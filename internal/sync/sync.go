@@ -3,7 +3,7 @@ package sync
 import (
 	"go.uber.org/zap"
 
-	"github.com/sandeepkv93/GooglySync/internal/storage"
+	"github.com/sandeepkv93/googlysync/internal/storage"
 )
 
 // Engine coordinates sync operations.

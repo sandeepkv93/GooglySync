@@ -3,7 +3,7 @@ load("@rules_go//go:def.bzl", "go_library")
 go_library(
     name = "daemon",
     srcs = ["daemon.go"],
-    importpath = "github.com/sandeepkv93/GooglySync/internal/daemon",
+    importpath = "github.com/sandeepkv93/googlysync/internal/daemon",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/auth",

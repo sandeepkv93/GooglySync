@@ -3,7 +3,7 @@ load("@rules_go//go:def.bzl", "go_library")
 go_library(
     name = "logging",
     srcs = ["logging.go"],
-    importpath = "github.com/sandeepkv93/GooglySync/internal/logging",
+    importpath = "github.com/sandeepkv93/googlysync/internal/logging",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/config",

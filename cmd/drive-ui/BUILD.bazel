@@ -3,7 +3,7 @@ load("@rules_go//go:def.bzl", "go_binary", "go_library")
 go_binary(
     name = "drive-ui",
     embed = [":drive-ui_lib"],
-    importpath = "github.com/sandeepkv93/GooglySync/cmd/drive-ui",
+    importpath = "github.com/sandeepkv93/googlysync/cmd/drive-ui",
     visibility = ["//visibility:public"],
 )
 
@@ -14,7 +14,7 @@ go_library(
         "main.go",
         "wire_gen.go",
     ],
-    importpath = "github.com/sandeepkv93/GooglySync/cmd/drive-ui",
+    importpath = "github.com/sandeepkv93/googlysync/cmd/drive-ui",
     visibility = ["//visibility:private"],
     deps = [
         "//internal/config",

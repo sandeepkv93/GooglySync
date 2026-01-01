@@ -7,13 +7,13 @@
 package main
 
 import (
-	"github.com/sandeepkv93/GooglySync/internal/auth"
-	"github.com/sandeepkv93/GooglySync/internal/config"
-	"github.com/sandeepkv93/GooglySync/internal/daemon"
-	"github.com/sandeepkv93/GooglySync/internal/fswatch"
-	"github.com/sandeepkv93/GooglySync/internal/logging"
-	"github.com/sandeepkv93/GooglySync/internal/storage"
-	"github.com/sandeepkv93/GooglySync/internal/sync"
+	"github.com/sandeepkv93/googlysync/internal/auth"
+	"github.com/sandeepkv93/googlysync/internal/config"
+	"github.com/sandeepkv93/googlysync/internal/daemon"
+	"github.com/sandeepkv93/googlysync/internal/fswatch"
+	"github.com/sandeepkv93/googlysync/internal/logging"
+	"github.com/sandeepkv93/googlysync/internal/storage"
+	"github.com/sandeepkv93/googlysync/internal/sync"
 )
 
 // Injectors from wire.go:
