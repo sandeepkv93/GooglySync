@@ -1,0 +1,34 @@
+repos:
+  - repo: local
+    hooks:
+      - id: gofmt
+        name: gofmt
+        entry: gofmt -w
+        language: system
+        types: [go]
+      - id: go-vet
+        name: go vet
+        entry: go vet ./...
+        language: system
+        pass_filenames: false
+      - id: golangci-lint
+        name: golangci-lint
+        entry: golangci-lint run
+        language: system
+        pass_filenames: false
+      - id: buf-lint
+        name: buf lint
+        entry: go run github.com/bufbuild/buf/cmd/buf@v1.34.0 lint
+        language: system
+        pass_filenames: false
+      - id: wire-check
+        name: wire:check
+        entry: task wire:check
+        language: system
+        pass_filenames: false
+      - id: bazel-build
+        name: bazel:build (manual)
+        entry: task bazel:build
+        language: system
+        pass_filenames: false
+        stages: [manual]

@@ -29,6 +29,14 @@ Pop!_OS 24 desktop client for Google Drive: Go sync daemon + GTK4 UI + FUSE stre
 `-- ui                - GTK UI resources/layouts
 ```
 
+## Pre-commit
+
+- Install: `pipx install pre-commit` (or `pip install pre-commit`)
+- Install tools: `golangci-lint` (plus Go for buf lint)
+- Enable: `pre-commit install`
+- Run all hooks: `pre-commit run --all-files`
+- Manual Bazel build: `pre-commit run bazel-build --all-files`
+
 ## Tasks
 
 | Task | Command | Description |
