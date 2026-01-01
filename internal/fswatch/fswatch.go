@@ -2,6 +2,7 @@ package fswatch
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -156,6 +157,7 @@ func (w *Watcher) flushPending() {
 	w.mu.Unlock()
 
 	for _, evt := range ready {
+		w.status.SetLastEvent(formatEvent(evt, w.cfg.SyncRoot))
 		select {
 		case w.out <- evt:
 		default:
@@ -230,5 +232,32 @@ func normalizeOp(op fsnotify.Op) Op {
 		return OpChmod
 	default:
 		return OpUnknown
+	}
+}
+
+func formatEvent(evt Event, root string) string {
+	path := evt.Path
+	if root != "" {
+		if rel, err := filepath.Rel(root, evt.Path); err == nil {
+			path = rel
+		}
+	}
+	return fmt.Sprintf("%s %s", opString(evt.Op), path)
+}
+
+func opString(op Op) string {
+	switch op {
+	case OpCreate:
+		return "CREATE"
+	case OpWrite:
+		return "WRITE"
+	case OpRemove:
+		return "REMOVE"
+	case OpRename:
+		return "RENAME"
+	case OpChmod:
+		return "CHMOD"
+	default:
+		return "UNKNOWN"
 	}
 }

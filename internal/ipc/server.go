@@ -3,6 +3,7 @@ package ipc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -15,7 +16,7 @@ import (
 
 	"github.com/sandeepkv93/googlysync/internal/config"
 	ipcgen "github.com/sandeepkv93/googlysync/internal/ipc/gen"
-	syncstatus "github.com/sandeepkv93/googlysync/internal/status"
+	"github.com/sandeepkv93/googlysync/internal/status"
 )
 
 // Server wraps the gRPC server for daemon IPC.
@@ -27,14 +28,14 @@ type Server struct {
 	cfg    *config.Config
 	logger *zap.Logger
 	ver    string
-	status *syncstatus.Store
+	status *status.Store
 
 	grpcServer *grpc.Server
 	listener   net.Listener
 }
 
 // NewServer constructs a gRPC IPC server.
-func NewServer(cfg *config.Config, logger *zap.Logger, statusStore *syncstatus.Store) (*Server, error) {
+func NewServer(cfg *config.Config, logger *zap.Logger, statusStore *status.Store) (*Server, error) {
 	return &Server{
 		cfg:    cfg,
 		logger: logger,
@@ -141,23 +142,27 @@ func (s *Server) GetAuthState(ctx context.Context, _ *ipcgen.Empty) (*ipcgen.Aut
 	return &ipcgen.AuthStateResponse{SignedIn: false, RequestId: "req-0"}, nil
 }
 
-func toProtoStatus(snapshot syncstatus.Snapshot) *ipcgen.Status {
+func toProtoStatus(snapshot status.Snapshot) *ipcgen.Status {
+	msg := snapshot.Message
+	if snapshot.LastEvent != "" {
+		msg = fmt.Sprintf("%s | last: %s", msg, snapshot.LastEvent)
+	}
 	return &ipcgen.Status{
 		State:     mapState(snapshot.State),
-		Message:   snapshot.Message,
+		Message:   msg,
 		UpdatedAt: timestamppb.New(snapshot.UpdatedAt),
 	}
 }
 
-func mapState(state syncstatus.State) ipcgen.Status_SyncState {
+func mapState(state status.State) ipcgen.Status_SyncState {
 	switch state {
-	case syncstatus.StateIdle:
+	case status.StateIdle:
 		return ipcgen.Status_IDLE
-	case syncstatus.StateSyncing:
+	case status.StateSyncing:
 		return ipcgen.Status_SYNCING
-	case syncstatus.StateError:
+	case status.StateError:
 		return ipcgen.Status_ERROR
-	case syncstatus.StatePaused:
+	case status.StatePaused:
 		return ipcgen.Status_PAUSED
 	default:
 		return ipcgen.Status_SYNC_STATE_UNSPECIFIED

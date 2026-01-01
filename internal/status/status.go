@@ -20,6 +20,7 @@ const (
 type Snapshot struct {
 	State     State
 	Message   string
+	LastEvent string
 	UpdatedAt time.Time
 }
 
@@ -40,7 +41,7 @@ func NewStore() *Store {
 	}
 }
 
-// Update replaces the current snapshot.
+// Update replaces the current snapshot, preserving LastEvent when omitted.
 func (s *Store) Update(snapshot Snapshot) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -48,7 +49,19 @@ func (s *Store) Update(snapshot Snapshot) {
 	if snapshot.UpdatedAt.IsZero() {
 		snapshot.UpdatedAt = time.Now()
 	}
+	if snapshot.LastEvent == "" {
+		snapshot.LastEvent = s.snapshot.LastEvent
+	}
 	s.snapshot = snapshot
+}
+
+// SetLastEvent updates the last observed event without changing state.
+func (s *Store) SetLastEvent(msg string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.snapshot.LastEvent = msg
+	s.snapshot.UpdatedAt = time.Now()
 }
 
 // Current returns a copy of the latest snapshot.
