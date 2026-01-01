@@ -19,6 +19,20 @@ func main() {
 		return
 	}
 
-	fmt.Printf("drive-daemon starting (config=%q log-level=%q)\n", *configPath, *logLevel)
-	os.Exit(0)
+	if *configPath != "" {
+		fmt.Printf("config override: %q (not yet wired)\n", *configPath)
+	}
+	if *logLevel != "info" {
+		fmt.Printf("log-level override: %q (not yet wired)\n", *logLevel)
+	}
+
+	daemon, err := InitializeDaemon()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "init failed: %v\n", err)
+		os.Exit(1)
+	}
+	if err := daemon.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "run failed: %v\n", err)
+		os.Exit(1)
+	}
 }

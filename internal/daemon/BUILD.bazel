@@ -1,0 +1,16 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "daemon",
+    srcs = ["daemon.go"],
+    importpath = "github.com/sandeepkv93/GooglySync/internal/daemon",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/auth",
+        "//internal/config",
+        "//internal/fswatch",
+        "//internal/storage",
+        "//internal/sync",
+        "@org_uber_go_zap//:go_default_library",
+    ],
+)

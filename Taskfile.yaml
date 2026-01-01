@@ -36,6 +36,11 @@ tasks:
     cmds:
       - bazelisk run //:gazelle
 
+  wire:
+    desc: Generate Wire DI files
+    cmds:
+      - go run github.com/google/wire/cmd/wire ./cmd/drive-daemon
+
   clean:
     desc: Clean Bazel outputs
     cmds:

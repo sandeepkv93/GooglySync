@@ -1,0 +1,13 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "logging",
+    srcs = ["logging.go"],
+    importpath = "github.com/sandeepkv93/GooglySync/internal/logging",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/config",
+        "@org_uber_go_zap//:go_default_library",
+        "@org_uber_go_zap//zapcore:go_default_library",
+    ],
+)

@@ -9,7 +9,27 @@ go_binary(
 
 go_library(
     name = "drive-daemon_lib",
-    srcs = ["main.go"],
+    srcs = [
+        "main.go",
+        "wire_gen.go",
+    ],
     importpath = "github.com/sandeepkv93/GooglySync/cmd/drive-daemon",
     visibility = ["//visibility:private"],
+    deps = [
+        "//internal/auth",
+        "//internal/config",
+        "//internal/daemon",
+        "//internal/fswatch",
+        "//internal/logging",
+        "//internal/storage",
+        "//internal/sync",
+    ],
+)
+
+genrule(
+    name = "wire_gen",
+    srcs = ["wire.go"],
+    outs = ["wire_gen.go"],
+    cmd = "cd $(RULEDIR) && go run github.com/google/wire/cmd/wire",
+    tags = ["manual"],
 )
