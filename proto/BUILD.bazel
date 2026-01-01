@@ -1,0 +1,13 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
+proto_library(
+    name = "ipc_proto",
+    srcs = [
+        "auth.proto",
+        "common.proto",
+        "daemon.proto",
+        "status.proto",
+    ],
+    deps = ["@protobuf//:timestamp_proto"],
+    visibility = ["//:__subpackages__"],
+)
