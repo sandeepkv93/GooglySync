@@ -1,0 +1,24 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "gen",
+    srcs = [
+        "auth.pb.go",
+        "auth_grpc.pb.go",
+        "common.pb.go",
+        "daemon.pb.go",
+        "daemon_grpc.pb.go",
+        "status.pb.go",
+        "status_grpc.pb.go",
+    ],
+    importpath = "github.com/sandeepkv93/googlysync/internal/ipc/gen",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
+        "@org_golang_google_protobuf//reflect/protoreflect",
+        "@org_golang_google_protobuf//runtime/protoimpl",
+        "@org_golang_google_protobuf//types/known/timestamppb",
+    ],
+)

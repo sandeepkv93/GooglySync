@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package googlysync.ipc.v1;
+
+option go_package = "github.com/sandeepkv93/googlysync/internal/ipc/gen;ipc";
+
+import "common.proto";
+
+service DaemonControl {
+  rpc Ping(Empty) returns (PingResponse);
+  rpc Shutdown(ShutdownRequest) returns (ShutdownResponse);
+}
+
+message PingResponse {
+  string version = 1;
+}
+
+message ShutdownRequest {
+  bool force = 1;
+}
+
+message ShutdownResponse {
+  string request_id = 1;
+}

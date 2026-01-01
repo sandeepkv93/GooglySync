@@ -7,12 +7,18 @@ toolchain go1.25.4
 require (
 	github.com/google/wire v0.7.0
 	go.uber.org/zap v1.27.1
+	google.golang.org/grpc v1.62.1
+	google.golang.org/protobuf v1.33.0
 	modernc.org/sqlite v1.42.2
 )
 
 require (
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
+	golang.org/x/net v0.43.0 // indirect
+	golang.org/x/text v0.28.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
 )
 
 require (

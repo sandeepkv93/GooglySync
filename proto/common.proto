@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package googlysync.ipc.v1;
+
+option go_package = "github.com/sandeepkv93/googlysync/internal/ipc/gen;ipc";
+
+import "google/protobuf/timestamp.proto";
+
+message Empty {}
+
+message Status {
+  enum SyncState {
+    SYNC_STATE_UNSPECIFIED = 0;
+    IDLE = 1;
+    SYNCING = 2;
+    ERROR = 3;
+    PAUSED = 4;
+  }
+
+  SyncState state = 1;
+  string message = 2;
+  google.protobuf.Timestamp updated_at = 3;
+}

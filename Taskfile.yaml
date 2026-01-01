@@ -38,11 +38,16 @@ tasks:
       - task wire
       - git diff --exit-code
 
+  buf:gen:
+    desc: Generate gRPC code via Buf
+    cmds:
+      - go run github.com/bufbuild/buf/cmd/buf@v1.34.0 generate
+
   goose:
     desc: Run Goose migrations via Bazel
     cmds:
       - |
-        db=${DB_PATH:-./var/drive.db}
+        db=${DB_PATH:-./var/googlysync.db}
         bazelisk run @com_github_pressly_goose_v3//cmd/goose:goose -- -dir internal/storage/migrations -table goose_db_version sqlite3 "$db" {{.CLI_ARGS}}
 
   clean:

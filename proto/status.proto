@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package googlysync.ipc.v1;
+
+option go_package = "github.com/sandeepkv93/googlysync/internal/ipc/gen;ipc";
+
+import "common.proto";
+
+service SyncStatus {
+  rpc GetStatus(Empty) returns (StatusResponse);
+  rpc WatchStatus(Empty) returns (stream StatusResponse);
+}
+
+message StatusResponse {
+  Status status = 1;
+  string request_id = 2;
+}

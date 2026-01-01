@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package googlysync.ipc.v1;
+
+option go_package = "github.com/sandeepkv93/googlysync/internal/ipc/gen;ipc";
+
+import "common.proto";
+
+service AuthService {
+  rpc GetAuthState(Empty) returns (AuthStateResponse);
+}
+
+message AuthStateResponse {
+  bool signed_in = 1;
+  string account_id = 2;
+  string request_id = 3;
+}

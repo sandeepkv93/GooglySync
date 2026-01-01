@@ -22,6 +22,8 @@ use_repo(
     "com_github_google_wire",
     "com_github_pressly_goose_v3",
     "in_gopkg_natefinch_lumberjack_v2",
+    "org_golang_google_grpc",
+    "org_golang_google_protobuf",
     "org_modernc_sqlite",
     "org_uber_go_zap",
 )
