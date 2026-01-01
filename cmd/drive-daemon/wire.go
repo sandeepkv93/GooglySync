@@ -17,9 +17,9 @@ import (
 	syncer "github.com/sandeepkv93/googlysync/internal/sync"
 )
 
-func InitializeDaemon() (*daemon.Daemon, error) {
+func InitializeDaemon(opts config.Options) (*daemon.Daemon, error) {
 	wire.Build(
-		config.NewConfig,
+		config.NewConfigWithOptions,
 		logging.NewLogger,
 		storage.NewStorage,
 		auth.NewService,

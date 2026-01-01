@@ -18,8 +18,8 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeDaemon() (*daemon.Daemon, error) {
-	configConfig, err := config.NewConfig()
+func InitializeDaemon(opts config.Options) (*daemon.Daemon, error) {
+	configConfig, err := config.NewConfigWithOptions(opts)
 	if err != nil {
 		return nil, err
 	}

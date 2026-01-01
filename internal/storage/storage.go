@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "modernc.org/sqlite"
 	"go.uber.org/zap"
+	_ "modernc.org/sqlite"
 
 	"github.com/sandeepkv93/googlysync/internal/config"
 )
@@ -29,4 +29,12 @@ func NewStorage(cfg *config.Config, logger *zap.Logger) (*Storage, error) {
 
 	logger.Info("storage initialized", zap.String("path", cfg.DatabasePath))
 	return &Storage{DB: db}, nil
+}
+
+// Close shuts down the database connection.
+func (s *Storage) Close() error {
+	if s == nil || s.DB == nil {
+		return nil
+	}
+	return s.DB.Close()
 }

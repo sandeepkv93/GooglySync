@@ -1,13 +1,15 @@
 package daemon
 
 import (
+	"context"
+
 	"go.uber.org/zap"
 
 	"github.com/sandeepkv93/googlysync/internal/auth"
 	"github.com/sandeepkv93/googlysync/internal/config"
 	"github.com/sandeepkv93/googlysync/internal/fswatch"
-	syncer "github.com/sandeepkv93/googlysync/internal/sync"
 	"github.com/sandeepkv93/googlysync/internal/storage"
+	syncer "github.com/sandeepkv93/googlysync/internal/sync"
 )
 
 // Daemon wires together core services.
@@ -40,8 +42,20 @@ func NewDaemon(
 	}, nil
 }
 
-// Run starts the daemon loop.
-func (d *Daemon) Run() error {
+// Run starts the daemon loop and blocks until shutdown.
+func (d *Daemon) Run(ctx context.Context) error {
 	d.Logger.Info("daemon running")
+
+	<-ctx.Done()
+	d.Logger.Info("daemon shutting down")
+
+	return d.Close()
+}
+
+// Close releases resources owned by the daemon.
+func (d *Daemon) Close() error {
+	if d.Storage != nil {
+		return d.Storage.Close()
+	}
 	return nil
 }

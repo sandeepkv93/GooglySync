@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -15,6 +16,7 @@ type Config struct {
 	DataDir      string
 	LogLevel     string
 	DatabasePath string
+	ConfigFile   string
 }
 
 // NewConfig builds a default config from XDG paths and environment.
@@ -51,4 +53,69 @@ func NewConfig() (*Config, error) {
 		LogLevel:     "info",
 		DatabasePath: filepath.Join(dataDir, "drive.db"),
 	}, nil
+}
+
+// Options defines runtime overrides for config resolution.
+type Options struct {
+	ConfigPath string
+	LogLevel   string
+}
+
+type fileConfig struct {
+	AppName      string `json:"app_name"`
+	ConfigDir    string `json:"config_dir"`
+	DataDir      string `json:"data_dir"`
+	LogLevel     string `json:"log_level"`
+	DatabasePath string `json:"database_path"`
+}
+
+// NewConfigWithOptions resolves config and applies overrides from options.
+func NewConfigWithOptions(opts Options) (*Config, error) {
+	cfg, err := NewConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	if opts.ConfigPath != "" {
+		if err := applyConfigFile(cfg, opts.ConfigPath); err != nil {
+			return nil, err
+		}
+		cfg.ConfigFile = opts.ConfigPath
+	}
+
+	if opts.LogLevel != "" {
+		cfg.LogLevel = opts.LogLevel
+	}
+
+	return cfg, nil
+}
+
+func applyConfigFile(cfg *Config, path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	var fc fileConfig
+	if err := json.Unmarshal(data, &fc); err != nil {
+		return err
+	}
+
+	if fc.AppName != "" {
+		cfg.AppName = fc.AppName
+	}
+	if fc.ConfigDir != "" {
+		cfg.ConfigDir = fc.ConfigDir
+	}
+	if fc.DataDir != "" {
+		cfg.DataDir = fc.DataDir
+	}
+	if fc.LogLevel != "" {
+		cfg.LogLevel = fc.LogLevel
+	}
+	if fc.DatabasePath != "" {
+		cfg.DatabasePath = fc.DatabasePath
+	}
+
+	return nil
 }
