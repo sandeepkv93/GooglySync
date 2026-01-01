@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/sandeepkv93/googlysync/internal/config"
 	"github.com/sandeepkv93/googlysync/internal/ipc"
@@ -32,6 +33,8 @@ func main() {
 		runFuse(os.Args[2:])
 	case "version":
 		fmt.Println(version)
+	case "help":
+		usage()
 	default:
 		usage()
 		os.Exit(2)
@@ -46,6 +49,7 @@ func usage() {
 	fmt.Println("  status   Print daemon sync status")
 	fmt.Println("  fuse     Placeholder for streaming mode")
 	fmt.Println("  version  Print CLI version")
+	fmt.Println("  help     Show this help")
 }
 
 func runDaemon(args []string) {
@@ -85,14 +89,18 @@ func runDaemon(args []string) {
 func runPing(args []string) {
 	fs := flag.NewFlagSet("ping", flag.ExitOnError)
 	socketPath := fs.String("socket", "", "unix socket path")
+	timeout := fs.Duration("timeout", 3*time.Second, "timeout for request")
 	_ = fs.Parse(args)
+
+	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
+	defer cancel()
 
 	cfg, err := config.NewConfigWithOptions(config.Options{SocketPath: *socketPath})
 	if err != nil {
 		fmt.Printf("config error: %v\n", err)
 		return
 	}
-	conn, err := ipc.Dial(context.Background(), cfg.SocketPath)
+	conn, err := ipc.Dial(ctx, cfg.SocketPath)
 	if err != nil {
 		fmt.Printf("dial error: %v\n", err)
 		return
@@ -100,7 +108,7 @@ func runPing(args []string) {
 	defer conn.Close()
 
 	client := ipcgen.NewDaemonControlClient(conn)
-	resp, err := client.Ping(context.Background(), &ipcgen.Empty{})
+	resp, err := client.Ping(ctx, &ipcgen.Empty{})
 	if err != nil {
 		fmt.Printf("ping error: %v\n", err)
 		return
@@ -111,6 +119,9 @@ func runPing(args []string) {
 func runStatus(args []string) {
 	fs := flag.NewFlagSet("status", flag.ExitOnError)
 	socketPath := fs.String("socket", "", "unix socket path")
+	watch := fs.Bool("watch", false, "stream status updates")
+	interval := fs.Duration("interval", 2*time.Second, "poll interval when not watching")
+	timeout := fs.Duration("timeout", 5*time.Second, "timeout for request")
 	_ = fs.Parse(args)
 
 	cfg, err := config.NewConfigWithOptions(config.Options{SocketPath: *socketPath})
@@ -118,7 +129,9 @@ func runStatus(args []string) {
 		fmt.Printf("config error: %v\n", err)
 		return
 	}
-	conn, err := ipc.Dial(context.Background(), cfg.SocketPath)
+
+	ctx := context.Background()
+	conn, err := ipc.Dial(ctx, cfg.SocketPath)
 	if err != nil {
 		fmt.Printf("dial error: %v\n", err)
 		return
@@ -126,9 +139,39 @@ func runStatus(args []string) {
 	defer conn.Close()
 
 	client := ipcgen.NewSyncStatusClient(conn)
-	resp, err := client.GetStatus(context.Background(), &ipcgen.Empty{})
-	if err != nil {
-		fmt.Printf("status error: %v\n", err)
+
+	if *watch {
+		stream, err := client.WatchStatus(ctx, &ipcgen.Empty{})
+		if err != nil {
+			fmt.Printf("watch error: %v\n", err)
+			return
+		}
+		for {
+			resp, err := stream.Recv()
+			if err != nil {
+				fmt.Printf("stream ended: %v\n", err)
+				return
+			}
+			printStatus(resp)
+		}
+	}
+
+	for {
+		callCtx, cancel := context.WithTimeout(ctx, *timeout)
+		resp, err := client.GetStatus(callCtx, &ipcgen.Empty{})
+		cancel()
+		if err != nil {
+			fmt.Printf("status error: %v\n", err)
+			return
+		}
+		printStatus(resp)
+		time.Sleep(*interval)
+	}
+}
+
+func printStatus(resp *ipcgen.StatusResponse) {
+	if resp == nil || resp.Status == nil {
+		fmt.Println("UNKNOWN: no status")
 		return
 	}
 	fmt.Printf("%s: %s\n", resp.Status.State.String(), resp.Status.Message)

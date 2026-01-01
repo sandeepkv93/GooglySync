@@ -6,10 +6,12 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/sandeepkv93/googlysync/internal/config"
@@ -24,6 +26,9 @@ type Server struct {
 
 	grpcServer *grpc.Server
 	listener   net.Listener
+
+	statusMu sync.Mutex
+	status   *gen.Status
 }
 
 // NewServer constructs a gRPC IPC server.
@@ -32,6 +37,11 @@ func NewServer(cfg *config.Config, logger *zap.Logger) (*Server, error) {
 		cfg:    cfg,
 		logger: logger,
 		ver:    "dev",
+		status: &gen.Status{
+			State:     gen.Status_IDLE,
+			Message:   "idle",
+			UpdatedAt: timestamppb.New(time.Now()),
+		},
 	}, nil
 }
 
@@ -105,26 +115,48 @@ func (s *Server) Shutdown(ctx context.Context, _ *gen.ShutdownRequest) (*gen.Shu
 // GetStatus returns a basic status snapshot.
 func (s *Server) GetStatus(ctx context.Context, _ *gen.Empty) (*gen.StatusResponse, error) {
 	_ = ctx
-	status := &gen.Status{
-		State:     gen.Status_IDLE,
-		Message:   "idle",
-		UpdatedAt: timestamppb.New(time.Now()),
-	}
+	status := s.snapshotStatus()
 	return &gen.StatusResponse{Status: status, RequestId: "req-0"}, nil
 }
 
-// WatchStatus streams a single status update then returns.
+// WatchStatus streams periodic status updates until the client disconnects.
 func (s *Server) WatchStatus(_ *gen.Empty, stream gen.SyncStatus_WatchStatusServer) error {
-	status := &gen.Status{
-		State:     gen.Status_IDLE,
-		Message:   "idle",
-		UpdatedAt: timestamppb.New(time.Now()),
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		status := s.snapshotStatus()
+		if err := stream.Send(&gen.StatusResponse{Status: status, RequestId: "req-0"}); err != nil {
+			return err
+		}
+		select {
+		case <-stream.Context().Done():
+			return statusError(stream.Context().Err())
+		case <-ticker.C:
+		}
 	}
-	return stream.Send(&gen.StatusResponse{Status: status, RequestId: "req-0"})
 }
 
 // GetAuthState returns a stub auth state.
 func (s *Server) GetAuthState(ctx context.Context, _ *gen.Empty) (*gen.AuthStateResponse, error) {
 	_ = ctx
 	return &gen.AuthStateResponse{SignedIn: false, RequestId: "req-0"}, nil
+}
+
+func (s *Server) snapshotStatus() *gen.Status {
+	s.statusMu.Lock()
+	defer s.statusMu.Unlock()
+
+	return &gen.Status{
+		State:     s.status.State,
+		Message:   s.status.Message,
+		UpdatedAt: timestamppb.New(time.Now()),
+	}
+}
+
+func statusError(err error) error {
+	if err == context.Canceled || err == context.DeadlineExceeded {
+		return status.FromContextError(err).Err()
+	}
+	return err
 }
