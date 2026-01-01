@@ -39,6 +39,28 @@ tasks:
       - task wire
       - git diff --exit-code
 
+
+  go:vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  golangci:lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run
+
+  buf:lint:
+    desc: Run buf lint
+    cmds:
+      - go run github.com/bufbuild/buf/cmd/buf@v1.34.0 lint
+
+  lint:all:
+    desc: Run all lint checks
+    cmds:
+      - task go:vet
+      - task golangci:lint
+      - task buf:lint
   buf:gen:
     desc: Generate gRPC code via Buf
     cmds:
