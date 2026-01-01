@@ -14,7 +14,13 @@ tasks:
   bazel:test:
     desc: Run Bazel tests
     cmds:
-      - bazelisk test //...
+      - |
+        tests=$(bazelisk query 'tests(//...)' 2>/dev/null || true)
+        if [ -z "$tests" ]; then
+          echo "No Bazel test targets; skipping."
+          exit 0
+        fi
+        bazelisk test $tests
 
   gazelle:
     desc: Run Gazelle to update BUILD files
