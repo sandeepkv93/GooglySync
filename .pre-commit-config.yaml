@@ -11,14 +11,19 @@ repos:
         entry: go vet ./...
         language: system
         pass_filenames: false
+        env:
+          GOCACHE: /tmp/googlysync-go-build
       - id: golangci-lint
         name: golangci-lint
         entry: golangci-lint run
         language: system
         pass_filenames: false
+        env:
+          GOCACHE: /tmp/googlysync-go-build
+          GOLANGCI_LINT_CACHE: .cache/golangci-lint
       - id: buf-lint
         name: buf lint
-        entry: go run github.com/bufbuild/buf/cmd/buf@v1.34.0 lint
+        entry: buf lint
         language: system
         pass_filenames: false
       - id: wire-check

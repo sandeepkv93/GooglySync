@@ -15,8 +15,7 @@ func Dial(ctx context.Context, socketPath string) (*grpc.ClientConn, error) {
 		return d.DialContext(ctx, "unix", socketPath)
 	}
 
-	return grpc.DialContext(
-		ctx,
+	return grpc.NewClient(
 		socketPath,
 		grpc.WithContextDialer(dialer),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),

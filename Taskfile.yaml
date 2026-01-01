@@ -43,17 +43,25 @@ tasks:
   go:vet:
     desc: Run go vet
     cmds:
-      - go vet ./...
+      - task cache:dirs
+      - env GOCACHE=$(pwd)/.cache/go-build go vet ./...
 
   golangci:lint:
     desc: Run golangci-lint
     cmds:
-      - golangci-lint run
+      - task cache:dirs
+      - env GOCACHE=$(pwd)/.cache/go-build GOLANGCI_LINT_CACHE=$(pwd)/.cache/golangci-lint golangci-lint run
 
   buf:lint:
     desc: Run buf lint
     cmds:
-      - go run github.com/bufbuild/buf/cmd/buf@v1.34.0 lint
+      - buf lint
+
+
+  cache:dirs:
+    desc: Ensure local cache directories exist
+    cmds:
+      - mkdir -p .cache/go-build .cache/golangci-lint
 
   lint:all:
     desc: Run all lint checks

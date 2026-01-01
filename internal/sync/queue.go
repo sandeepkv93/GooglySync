@@ -1,8 +1,6 @@
 package sync
 
 import (
-	"sync"
-
 	"go.uber.org/zap"
 
 	"github.com/sandeepkv93/googlysync/internal/fswatch"
@@ -11,7 +9,6 @@ import (
 // Queue buffers filesystem events for processing.
 type Queue struct {
 	logger *zap.Logger
-	mu     sync.Mutex
 	ch     chan fswatch.Event
 }
 

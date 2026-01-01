@@ -74,7 +74,7 @@ func runDaemon(args []string) {
 		os.Exit(1)
 	}
 	if daemon.Logger != nil {
-		defer daemon.Logger.Sync()
+		defer func() { _ = daemon.Logger.Sync() }()
 	}
 	if daemon.IPC != nil {
 		daemon.IPC.WithVersion(version)
