@@ -1,6 +1,8 @@
 //go:build wireinject
 // +build wireinject
 
+//go:generate go run github.com/google/wire/cmd/wire
+
 package main
 
 import (
@@ -11,8 +13,8 @@ import (
 	"github.com/sandeepkv93/GooglySync/internal/daemon"
 	"github.com/sandeepkv93/GooglySync/internal/fswatch"
 	"github.com/sandeepkv93/GooglySync/internal/logging"
-	syncer "github.com/sandeepkv93/GooglySync/internal/sync"
 	"github.com/sandeepkv93/GooglySync/internal/storage"
+	syncer "github.com/sandeepkv93/GooglySync/internal/sync"
 )
 
 func InitializeDaemon() (*daemon.Daemon, error) {

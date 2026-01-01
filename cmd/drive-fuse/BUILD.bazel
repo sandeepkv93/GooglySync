@@ -9,7 +9,24 @@ go_binary(
 
 go_library(
     name = "drive-fuse_lib",
-    srcs = ["main.go"],
+    srcs = [
+        "app.go",
+        "main.go",
+        "wire_gen.go",
+    ],
     importpath = "github.com/sandeepkv93/GooglySync/cmd/drive-fuse",
     visibility = ["//visibility:private"],
+    deps = [
+        "//internal/config",
+        "//internal/logging",
+        "@org_uber_go_zap//:go_default_library",
+    ],
+)
+
+genrule(
+    name = "wire_gen",
+    srcs = ["wire.go"],
+    outs = ["wire_gen.go"],
+    cmd = "cd $(RULEDIR) && go run github.com/google/wire/cmd/wire",
+    tags = ["manual"],
 )

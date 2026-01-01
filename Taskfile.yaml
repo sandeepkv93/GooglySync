@@ -39,7 +39,13 @@ tasks:
   wire:
     desc: Generate Wire DI files
     cmds:
-      - go run github.com/google/wire/cmd/wire ./cmd/drive-daemon
+      - go generate -tags=wireinject ./cmd/drive-daemon ./cmd/drive-ui ./cmd/drive-fuse
+
+  wire:check:
+    desc: Generate Wire files and verify no diffs
+    cmds:
+      - task wire
+      - git diff --exit-code
 
   clean:
     desc: Clean Bazel outputs
