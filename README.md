@@ -1,7 +1,7 @@
 # googlysync
 
 [![CI](https://github.com/sandeepkv93/googlysync/workflows/CI/badge.svg)](https://github.com/sandeepkv93/googlysync/actions)
-[![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 <img src="assets/googlysync-icon.png" alt="googlysync icon" width="200">

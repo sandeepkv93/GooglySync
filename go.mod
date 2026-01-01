@@ -1,8 +1,8 @@
 module github.com/sandeepkv93/googlysync
 
-go 1.25
+go 1.24
 
-toolchain go1.25.4
+toolchain go1.24.11
 
 require (
 	github.com/google/wire v0.7.0
