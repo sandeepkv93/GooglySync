@@ -9,6 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/sandeepkv93/googlysync/internal/config"
 	"github.com/sandeepkv93/googlysync/internal/ipc"
 	ipcgen "github.com/sandeepkv93/googlysync/internal/ipc/gen"
@@ -18,8 +20,8 @@ var version = "dev"
 
 func main() {
 	if len(os.Args) < 2 {
-		usage()
-		os.Exit(2)
+		runTUI(os.Args[1:])
+		return
 	}
 
 	switch os.Args[1] {
@@ -46,10 +48,11 @@ func usage() {
 	fmt.Println("Commands:")
 	fmt.Println("  daemon   Start the sync daemon")
 	fmt.Println("  ping     Ping the daemon and print version")
-	fmt.Println("  status   Print daemon sync status")
+	fmt.Println("  status   Launch status TUI")
 	fmt.Println("  fuse     Placeholder for streaming mode")
 	fmt.Println("  version  Print CLI version")
 	fmt.Println("  help     Show this help")
+	fmt.Println("(No command opens the status TUI)")
 }
 
 func runDaemon(args []string) {
@@ -117,64 +120,19 @@ func runPing(args []string) {
 }
 
 func runStatus(args []string) {
-	fs := flag.NewFlagSet("status", flag.ExitOnError)
-	socketPath := fs.String("socket", "", "unix socket path")
-	watch := fs.Bool("watch", false, "stream status updates")
-	interval := fs.Duration("interval", 2*time.Second, "poll interval when not watching")
-	timeout := fs.Duration("timeout", 5*time.Second, "timeout for request")
-	_ = fs.Parse(args)
-
-	cfg, err := config.NewConfigWithOptions(config.Options{SocketPath: *socketPath})
-	if err != nil {
-		fmt.Printf("config error: %v\n", err)
-		return
-	}
-
-	ctx := context.Background()
-	conn, err := ipc.Dial(ctx, cfg.SocketPath)
-	if err != nil {
-		fmt.Printf("dial error: %v\n", err)
-		return
-	}
-	defer conn.Close()
-
-	client := ipcgen.NewSyncStatusClient(conn)
-
-	if *watch {
-		stream, err := client.WatchStatus(ctx, &ipcgen.Empty{})
-		if err != nil {
-			fmt.Printf("watch error: %v\n", err)
-			return
-		}
-		for {
-			resp, err := stream.Recv()
-			if err != nil {
-				fmt.Printf("stream ended: %v\n", err)
-				return
-			}
-			printStatus(resp)
-		}
-	}
-
-	for {
-		callCtx, cancel := context.WithTimeout(ctx, *timeout)
-		resp, err := client.GetStatus(callCtx, &ipcgen.Empty{})
-		cancel()
-		if err != nil {
-			fmt.Printf("status error: %v\n", err)
-			return
-		}
-		printStatus(resp)
-		time.Sleep(*interval)
-	}
+	runTUI(args)
 }
 
-func printStatus(resp *ipcgen.StatusResponse) {
-	if resp == nil || resp.Status == nil {
-		fmt.Println("UNKNOWN: no status")
-		return
+func runTUI(args []string) {
+	fs := flag.NewFlagSet("status", flag.ExitOnError)
+	socketPath := fs.String("socket", "", "unix socket path")
+	interval := fs.Duration("interval", 2*time.Second, "refresh interval")
+	_ = fs.Parse(args)
+
+	m := newModel(*socketPath, *interval)
+	if _, err := tea.NewProgram(m).Run(); err != nil {
+		fmt.Printf("ui error: %v\n", err)
 	}
-	fmt.Printf("%s: %s\n", resp.Status.State.String(), resp.Status.Message)
 }
 
 func runFuse(args []string) {
