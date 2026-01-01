@@ -22,11 +22,3 @@ go_library(
         "@org_uber_go_zap//:go_default_library",
     ],
 )
-
-genrule(
-    name = "wire_gen",
-    srcs = ["wire.go"],
-    outs = ["wire_gen.go"],
-    cmd = "cd $(RULEDIR) && go run github.com/google/wire/cmd/wire",
-    tags = ["manual"],
-)
