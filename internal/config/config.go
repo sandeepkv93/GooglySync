@@ -12,16 +12,16 @@ const appDirName = "drive-client"
 
 // Config holds basic runtime configuration.
 type Config struct {
-	AppName           string
-	ConfigDir         string
-	DataDir           string
-	LogLevel          string
-	DatabasePath      string
-	ConfigFile        string
-	LogFilePath       string
-	LogFileMaxMB      int
-	LogFileMaxBackups int
-	LogFileMaxAgeDays int
+	AppName            string
+	ConfigDir          string
+	DataDir            string
+	LogLevel           string
+	DatabasePath       string
+	ConfigFile         string
+	LogFilePath        string
+	LogFileMaxMB       int
+	LogFileMaxBackups  int
+	LogFileMaxAgeDays  int
 }
 
 // NewConfig builds a default config from XDG paths and environment.
@@ -56,7 +56,7 @@ func NewConfig() (*Config, error) {
 		ConfigDir:         configDir,
 		DataDir:           dataDir,
 		LogLevel:          "info",
-		DatabasePath:      filepath.Join(dataDir, "drive.db"),
+		DatabasePath:      filepath.Join(dataDir, "googlysync.db"),
 		LogFilePath:       filepath.Join(dataDir, "logs", "daemon.jsonl"),
 		LogFileMaxMB:      10,
 		LogFileMaxBackups: 5,
