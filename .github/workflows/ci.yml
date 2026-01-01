@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Bazelisk
+        if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') != '' && hashFiles('**/BUILD', '**/BUILD.bazel') != ''
+        uses: bazelbuild/setup-bazelisk@v3
+
+      - name: Bazel build
+        if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') != '' && hashFiles('**/BUILD', '**/BUILD.bazel') != ''
+        run: bazelisk build //...
+
+      - name: No Bazel targets yet
+        if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') == '' || hashFiles('**/BUILD', '**/BUILD.bazel') == ''
+        run: echo "No Bazel workspace or BUILD files; skipping Bazel build."
+
+      - name: Set up Go
+        if: hashFiles('go.mod') != ''
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Go test
+        if: hashFiles('go.mod') != ''
+        run: go test ./...
+
+      - name: No Go module yet
+        if: hashFiles('go.mod') == ''
+        run: echo "No go.mod; skipping Go tests."

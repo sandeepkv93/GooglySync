@@ -1,0 +1,8 @@
+load("@bazel_gazelle//:def.bzl", "gazelle")
+
+# gazelle:prefix github.com/sandeepkv93/GooglySync
+
+gazelle(
+    name = "gazelle",
+    args = ["-build_file_name=BUILD.bazel"],
+)
