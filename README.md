@@ -7,7 +7,7 @@ Pop!_OS 24 desktop client for Google Drive: Go sync daemon + GTK4 UI + FUSE stre
 ```
 .
 |-- assets            - icons/branding
-|-- cmd               - entry points (drive-daemon, drive-ui, drive-fuse)
+|-- cmd               - entry point (googlysync CLI)
 |-- configs           - config templates
 |-- docs              - additional docs
 |-- internal          - core app packages (auth, config, storage, sync, ipc, etc.)
@@ -38,8 +38,10 @@ Pop!_OS 24 desktop client for Google Drive: Go sync daemon + GTK4 UI + FUSE stre
 
 ## Run (dev)
 
-- Build daemon: `task bazel:build`
-- Run daemon: `bazelisk run //cmd/drive-daemon:drive-daemon -- --config configs/dev.json`
+- Build: `task bazel:build`
+- Start daemon: `bazelisk run //cmd/googlysync:googlysync -- daemon --config configs/dev.json`
+- Ping daemon: `bazelisk run //cmd/googlysync:googlysync -- ping --socket ./var/daemon.sock`
+- Status: `bazelisk run //cmd/googlysync:googlysync -- status --socket ./var/daemon.sock`
 
 ## Logging
 

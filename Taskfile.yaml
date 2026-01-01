@@ -30,7 +30,7 @@ tasks:
   wire:
     desc: Generate Wire DI files
     cmds:
-      - go generate -tags=wireinject ./cmd/drive-daemon ./cmd/drive-ui ./cmd/drive-fuse
+      - go generate -tags=wireinject ./cmd/googlysync
 
   wire:check:
     desc: Generate Wire files and verify no diffs
