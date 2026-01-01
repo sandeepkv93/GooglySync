@@ -12,16 +12,18 @@ const appDirName = "drive-client"
 
 // Config holds basic runtime configuration.
 type Config struct {
-	AppName            string
-	ConfigDir          string
-	DataDir            string
-	LogLevel           string
-	DatabasePath       string
-	ConfigFile         string
-	LogFilePath        string
-	LogFileMaxMB       int
-	LogFileMaxBackups  int
-	LogFileMaxAgeDays  int
+	AppName           string
+	ConfigDir         string
+	DataDir           string
+	RuntimeDir        string
+	SocketPath        string
+	LogLevel          string
+	DatabasePath      string
+	ConfigFile        string
+	LogFilePath       string
+	LogFileMaxMB      int
+	LogFileMaxBackups int
+	LogFileMaxAgeDays int
 }
 
 // NewConfig builds a default config from XDG paths and environment.
@@ -44,17 +46,29 @@ func NewConfig() (*Config, error) {
 		dataHome = filepath.Join(home, ".local", "share")
 	}
 
+	runtimeDir := os.Getenv("XDG_RUNTIME_DIR")
+	if runtimeDir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return nil, err
+		}
+		runtimeDir = filepath.Join(home, ".cache")
+	}
+
 	if configHome == "" || dataHome == "" {
 		return nil, errors.New("unable to resolve XDG directories")
 	}
 
 	configDir := filepath.Join(configHome, appDirName)
 	dataDir := filepath.Join(dataHome, appDirName)
+	socketPath := filepath.Join(runtimeDir, "googlysync", "daemon.sock")
 
 	return &Config{
 		AppName:           "googlysync",
 		ConfigDir:         configDir,
 		DataDir:           dataDir,
+		RuntimeDir:        runtimeDir,
+		SocketPath:        socketPath,
 		LogLevel:          "info",
 		DatabasePath:      filepath.Join(dataDir, "googlysync.db"),
 		LogFilePath:       filepath.Join(dataDir, "logs", "daemon.jsonl"),
@@ -68,12 +82,15 @@ func NewConfig() (*Config, error) {
 type Options struct {
 	ConfigPath string
 	LogLevel   string
+	SocketPath string
 }
 
 type fileConfig struct {
 	AppName           string `json:"app_name"`
 	ConfigDir         string `json:"config_dir"`
 	DataDir           string `json:"data_dir"`
+	RuntimeDir        string `json:"runtime_dir"`
+	SocketPath        string `json:"socket_path"`
 	LogLevel          string `json:"log_level"`
 	DatabasePath      string `json:"database_path"`
 	LogFilePath       string `json:"log_file_path"`
@@ -101,6 +118,9 @@ func NewConfigWithOptions(opts Options) (*Config, error) {
 	if opts.LogLevel != "" {
 		cfg.LogLevel = opts.LogLevel
 	}
+	if opts.SocketPath != "" {
+		cfg.SocketPath = opts.SocketPath
+	}
 
 	return cfg, nil
 }
@@ -124,6 +144,12 @@ func applyConfigFile(cfg *Config, path string) error {
 	}
 	if fc.DataDir != "" {
 		cfg.DataDir = fc.DataDir
+	}
+	if fc.RuntimeDir != "" {
+		cfg.RuntimeDir = fc.RuntimeDir
+	}
+	if fc.SocketPath != "" {
+		cfg.SocketPath = fc.SocketPath
 	}
 	if fc.LogLevel != "" {
 		cfg.LogLevel = fc.LogLevel
@@ -168,5 +194,8 @@ func applyEnv(cfg *Config) {
 		if i, err := strconv.Atoi(v); err == nil && i > 0 {
 			cfg.LogFileMaxAgeDays = i
 		}
+	}
+	if v := os.Getenv("GOOGLYSYNC_SOCKET_PATH"); v != "" {
+		cfg.SocketPath = v
 	}
 }

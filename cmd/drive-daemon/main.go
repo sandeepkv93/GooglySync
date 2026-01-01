@@ -16,6 +16,7 @@ var version = "dev"
 func main() {
 	configPath := flag.String("config", "", "path to config file (JSON)")
 	logLevel := flag.String("log-level", "", "log level")
+	socketPath := flag.String("socket", "", "unix socket path")
 	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
 
@@ -27,6 +28,7 @@ func main() {
 	opts := config.Options{
 		ConfigPath: *configPath,
 		LogLevel:   *logLevel,
+		SocketPath: *socketPath,
 	}
 
 	daemon, err := InitializeDaemon(opts)
@@ -36,6 +38,9 @@ func main() {
 	}
 	if daemon.Logger != nil {
 		defer daemon.Logger.Sync()
+	}
+	if daemon.IPC != nil {
+		daemon.IPC.WithVersion(version)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

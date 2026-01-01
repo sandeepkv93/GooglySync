@@ -1,6 +1,7 @@
 load("@gazelle//:def.bzl", "gazelle")
 
 # gazelle:prefix github.com/sandeepkv93/googlysync
+# gazelle:exclude proto
 
 gazelle(
     name = "gazelle",

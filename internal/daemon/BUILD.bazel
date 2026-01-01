@@ -9,6 +9,7 @@ go_library(
         "//internal/auth",
         "//internal/config",
         "//internal/fswatch",
+        "//internal/ipc",
         "//internal/storage",
         "//internal/sync",
         "@org_uber_go_zap//:zap",

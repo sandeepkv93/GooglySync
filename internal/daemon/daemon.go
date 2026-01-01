@@ -8,6 +8,7 @@ import (
 	"github.com/sandeepkv93/googlysync/internal/auth"
 	"github.com/sandeepkv93/googlysync/internal/config"
 	"github.com/sandeepkv93/googlysync/internal/fswatch"
+	"github.com/sandeepkv93/googlysync/internal/ipc"
 	"github.com/sandeepkv93/googlysync/internal/storage"
 	syncer "github.com/sandeepkv93/googlysync/internal/sync"
 )
@@ -20,6 +21,7 @@ type Daemon struct {
 	Auth    *auth.Service
 	Sync    *syncer.Engine
 	Watcher *fswatch.Watcher
+	IPC     *ipc.Server
 }
 
 // NewDaemon constructs a daemon.
@@ -30,6 +32,7 @@ func NewDaemon(
 	authSvc *auth.Service,
 	syncEngine *syncer.Engine,
 	watcher *fswatch.Watcher,
+	ipcServer *ipc.Server,
 ) (*Daemon, error) {
 	logger.Info("daemon initialized")
 	return &Daemon{
@@ -39,6 +42,7 @@ func NewDaemon(
 		Auth:    authSvc,
 		Sync:    syncEngine,
 		Watcher: watcher,
+		IPC:     ipcServer,
 	}, nil
 }
 
@@ -46,10 +50,28 @@ func NewDaemon(
 func (d *Daemon) Run(ctx context.Context) error {
 	d.Logger.Info("daemon running")
 
-	<-ctx.Done()
-	d.Logger.Info("daemon shutting down")
+	errCh := make(chan error, 1)
+	go func() {
+		if d.IPC == nil {
+			errCh <- nil
+			return
+		}
+		errCh <- d.IPC.Start(ctx)
+	}()
 
-	return d.Close()
+	select {
+	case <-ctx.Done():
+		if d.IPC != nil {
+			d.IPC.Stop()
+		}
+		d.Logger.Info("daemon shutting down")
+		return d.Close()
+	case err := <-errCh:
+		if err != nil {
+			return err
+		}
+		return d.Close()
+	}
 }
 
 // Close releases resources owned by the daemon.

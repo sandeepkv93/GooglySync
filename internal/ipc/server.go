@@ -1,0 +1,130 @@
+package ipc
+
+import (
+	"context"
+	"errors"
+	"net"
+	"os"
+	"path/filepath"
+	"time"
+
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/sandeepkv93/googlysync/internal/config"
+	"github.com/sandeepkv93/googlysync/internal/ipc/gen"
+)
+
+// Server wraps the gRPC server for daemon IPC.
+type Server struct {
+	cfg    *config.Config
+	logger *zap.Logger
+	ver    string
+
+	grpcServer *grpc.Server
+	listener   net.Listener
+}
+
+// NewServer constructs a gRPC IPC server.
+func NewServer(cfg *config.Config, logger *zap.Logger) (*Server, error) {
+	return &Server{
+		cfg:    cfg,
+		logger: logger,
+		ver:    "dev",
+	}, nil
+}
+
+// WithVersion sets the server version string.
+func (s *Server) WithVersion(version string) {
+	if version != "" {
+		s.ver = version
+	}
+}
+
+// Start begins serving over a Unix domain socket and blocks until ctx is done.
+func (s *Server) Start(ctx context.Context) error {
+	if s.cfg.SocketPath == "" {
+		return errors.New("socket path not configured")
+	}
+
+	if err := os.MkdirAll(filepath.Dir(s.cfg.SocketPath), 0o700); err != nil {
+		return err
+	}
+	_ = os.Remove(s.cfg.SocketPath)
+
+	ln, err := net.Listen("unix", s.cfg.SocketPath)
+	if err != nil {
+		return err
+	}
+	s.listener = ln
+
+	s.grpcServer = grpc.NewServer()
+	gen.RegisterDaemonControlServer(s.grpcServer, s)
+	gen.RegisterSyncStatusServer(s.grpcServer, s)
+	gen.RegisterAuthServiceServer(s.grpcServer, s)
+
+	errCh := make(chan error, 1)
+	go func() {
+		s.logger.Info("ipc server listening", zap.String("socket", s.cfg.SocketPath))
+		errCh <- s.grpcServer.Serve(ln)
+	}()
+
+	select {
+	case <-ctx.Done():
+		s.grpcServer.GracefulStop()
+		_ = ln.Close()
+		return nil
+	case err := <-errCh:
+		return err
+	}
+}
+
+// Stop forces the gRPC server to stop.
+func (s *Server) Stop() {
+	if s.grpcServer != nil {
+		s.grpcServer.Stop()
+	}
+	if s.listener != nil {
+		_ = s.listener.Close()
+	}
+}
+
+// Ping returns daemon version.
+func (s *Server) Ping(ctx context.Context, _ *gen.Empty) (*gen.PingResponse, error) {
+	_ = ctx
+	return &gen.PingResponse{Version: s.ver}, nil
+}
+
+// Shutdown is a placeholder for future graceful shutdown.
+func (s *Server) Shutdown(ctx context.Context, _ *gen.ShutdownRequest) (*gen.ShutdownResponse, error) {
+	_ = ctx
+	return &gen.ShutdownResponse{RequestId: "req-0"}, nil
+}
+
+// GetStatus returns a basic status snapshot.
+func (s *Server) GetStatus(ctx context.Context, _ *gen.Empty) (*gen.StatusResponse, error) {
+	_ = ctx
+	status := &gen.Status{
+		State:     gen.Status_IDLE,
+		Message:   "idle",
+		UpdatedAt: timestamppb.New(time.Now()),
+	}
+	return &gen.StatusResponse{Status: status, RequestId: "req-0"}, nil
+}
+
+// WatchStatus streams a single status update then returns.
+func (s *Server) WatchStatus(_ *gen.Empty, stream gen.SyncStatus_WatchStatusServer) error {
+	status := &gen.Status{
+		State:     gen.Status_IDLE,
+		Message:   "idle",
+		UpdatedAt: timestamppb.New(time.Now()),
+	}
+	return stream.Send(&gen.StatusResponse{Status: status, RequestId: "req-0"})
+}
+
+// GetAuthState returns a stub auth state.
+func (s *Server) GetAuthState(ctx context.Context, _ *gen.Empty) (*gen.AuthStateResponse, error) {
+	_ = ctx
+	return &gen.AuthStateResponse{SignedIn: false, RequestId: "req-0"}, nil
+}
