@@ -20,7 +20,7 @@ var version = "dev"
 
 func main() {
 	if len(os.Args) < 2 {
-		runTUI(os.Args[1:])
+		runStatus(os.Args[1:])
 		return
 	}
 
@@ -91,6 +91,7 @@ func runDaemon(args []string) {
 
 func runPing(args []string) {
 	fs := flag.NewFlagSet("ping", flag.ExitOnError)
+	configPath := fs.String("config", "", "path to config file (JSON)")
 	socketPath := fs.String("socket", "", "unix socket path")
 	timeout := fs.Duration("timeout", 3*time.Second, "timeout for request")
 	_ = fs.Parse(args)
@@ -98,7 +99,7 @@ func runPing(args []string) {
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 
-	cfg, err := config.NewConfigWithOptions(config.Options{SocketPath: *socketPath})
+	cfg, err := config.NewConfigWithOptions(config.Options{ConfigPath: *configPath, SocketPath: *socketPath})
 	if err != nil {
 		fmt.Printf("config error: %v\n", err)
 		return
@@ -121,17 +122,24 @@ func runPing(args []string) {
 
 func runStatus(args []string) {
 	fs := flag.NewFlagSet("status", flag.ExitOnError)
+	configPath := fs.String("config", "", "path to config file (JSON)")
 	socketPath := fs.String("socket", "", "unix socket path")
 	interval := fs.Duration("interval", 2*time.Second, "refresh interval")
 	once := fs.Bool("once", false, "print status once and exit")
 	_ = fs.Parse(args)
 
-	if *once {
-		printStatusOnce(*socketPath)
+	cfg, err := config.NewConfigWithOptions(config.Options{ConfigPath: *configPath, SocketPath: *socketPath})
+	if err != nil {
+		fmt.Printf("config error: %v\n", err)
 		return
 	}
 
-	m := newModel(*socketPath, *interval)
+	if *once {
+		printStatusOnce(cfg.SocketPath)
+		return
+	}
+
+	m := newModel(cfg.SocketPath, *interval)
 	if _, err := tea.NewProgram(m).Run(); err != nil {
 		fmt.Printf("ui error: %v\n", err)
 	}
@@ -141,12 +149,7 @@ func printStatusOnce(socketPath string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	cfg, err := config.NewConfigWithOptions(config.Options{SocketPath: socketPath})
-	if err != nil {
-		fmt.Printf("config error: %v\n", err)
-		return
-	}
-	conn, err := ipc.Dial(ctx, cfg.SocketPath)
+	conn, err := ipc.Dial(ctx, socketPath)
 	if err != nil {
 		fmt.Printf("dial error: %v\n", err)
 		return
@@ -164,18 +167,6 @@ func printStatusOnce(socketPath string) {
 		return
 	}
 	fmt.Printf("%s: %s\n", resp.Status.State.String(), resp.Status.Message)
-}
-
-func runTUI(args []string) {
-	fs := flag.NewFlagSet("status", flag.ExitOnError)
-	socketPath := fs.String("socket", "", "unix socket path")
-	interval := fs.Duration("interval", 2*time.Second, "refresh interval")
-	_ = fs.Parse(args)
-
-	m := newModel(*socketPath, *interval)
-	if _, err := tea.NewProgram(m).Run(); err != nil {
-		fmt.Printf("ui error: %v\n", err)
-	}
 }
 
 func runFuse(args []string) {

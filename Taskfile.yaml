@@ -33,7 +33,7 @@ tasks:
       - go generate -tags=wireinject ./cmd/googlysync
 
   wire:check:
-    desc: Generate Wire files and verify no diffs
+    desc: Generate Wire DI files and verify no diffs
     cmds:
       - task wire
       - git diff --exit-code
@@ -60,19 +60,19 @@ tasks:
     desc: Build and run status (once) using the built binary
     cmds:
       - task bazel:build
-      - bazel-bin/cmd/googlysync/googlysync_/googlysync status --once --socket /tmp/googlysync/daemon.sock
+      - bazel-bin/cmd/googlysync/googlysync_/googlysync status --once --config $(pwd)/configs/dev.json
 
   run:ping:
     desc: Build and ping daemon using the built binary
     cmds:
       - task bazel:build
-      - bazel-bin/cmd/googlysync/googlysync_/googlysync ping --socket /tmp/googlysync/daemon.sock
+      - bazel-bin/cmd/googlysync/googlysync_/googlysync ping --config $(pwd)/configs/dev.json
 
   run:tui:
     desc: Build and run the status TUI using the built binary
     cmds:
       - task bazel:build
-      - bazel-bin/cmd/googlysync/googlysync_/googlysync
+      - bazel-bin/cmd/googlysync/googlysync_/googlysync status --config $(pwd)/configs/dev.json
 
   clean:
     desc: Clean Bazel outputs
