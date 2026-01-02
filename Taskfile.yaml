@@ -55,7 +55,7 @@ tasks:
   buf:lint:
     desc: Run buf lint
     cmds:
-      - buf lint
+      - go run github.com/bufbuild/buf/cmd/buf@v1.34.0 lint
 
 
   cache:dirs:

@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
@@ -29,6 +30,10 @@ jobs:
         if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') != '' && hashFiles('**/BUILD', '**/BUILD.bazel') != ''
         run: task bazel:build
 
+      - name: Bazel test (Task)
+        if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') != '' && hashFiles('**/BUILD', '**/BUILD.bazel') != ''
+        run: task bazel:test
+
       - name: No Bazel targets yet
         if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') == '' || hashFiles('**/BUILD', '**/BUILD.bazel') == ''
         run: echo "No Bazel workspace or BUILD files; skipping Bazel build."
@@ -36,6 +41,20 @@ jobs:
       - name: Wire check (Task)
         if: hashFiles('cmd/**/wire.go') != ''
         run: task wire:check
+
+      - name: Lint - go vet
+        if: hashFiles('go.mod') != ''
+        run: task go:vet
+
+      - name: golangci-lint
+        if: hashFiles('go.mod') != ''
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+      - name: Lint - buf
+        if: hashFiles('buf.yaml') != ''
+        run: task buf:lint
 
       - name: No Go module yet
         if: hashFiles('go.mod') == ''

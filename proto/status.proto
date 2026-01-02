@@ -6,12 +6,21 @@ option go_package = "github.com/sandeepkv93/googlysync/internal/ipc/gen;ipc";
 
 import "common.proto";
 
-service SyncStatus {
-  rpc GetStatus(Empty) returns (StatusResponse);
-  rpc WatchStatus(Empty) returns (stream StatusResponse);
+service SyncStatusService {
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
+  rpc WatchStatus(WatchStatusRequest) returns (stream WatchStatusResponse);
 }
 
-message StatusResponse {
+message GetStatusRequest {}
+
+message GetStatusResponse {
+  Status status = 1;
+  string request_id = 2;
+}
+
+message WatchStatusRequest {}
+
+message WatchStatusResponse {
   Status status = 1;
   string request_id = 2;
 }
