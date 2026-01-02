@@ -33,6 +33,16 @@ func NewStorage(cfg *config.Config, logger *zap.Logger) (*Storage, error) {
 	if err != nil {
 		return nil, err
 	}
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
+	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if _, err := db.Exec("PRAGMA busy_timeout = 5000"); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 
 	if err := migrate(context.Background(), db, logger); err != nil {
 		_ = db.Close()
