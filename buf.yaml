@@ -7,6 +7,11 @@ build:
 lint:
   use:
     - DEFAULT
+  except:
+    # Allow proto files to be in proto/ instead of proto/googlysync/ipc/v1/
+    - PACKAGE_DIRECTORY_MATCH
+    # Allow Empty type reuse for simple request/response
+    - RPC_REQUEST_RESPONSE_UNIQUE
 
 breaking:
   use:

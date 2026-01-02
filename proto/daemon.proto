@@ -4,12 +4,12 @@ package googlysync.ipc.v1;
 
 option go_package = "github.com/sandeepkv93/googlysync/internal/ipc/gen;ipc";
 
-import "common.proto";
-
-service DaemonControl {
-  rpc Ping(Empty) returns (PingResponse);
+service DaemonControlService {
+  rpc Ping(PingRequest) returns (PingResponse);
   rpc Shutdown(ShutdownRequest) returns (ShutdownResponse);
 }
+
+message PingRequest {}
 
 message PingResponse {
   string version = 1;

@@ -133,8 +133,8 @@ func pollStatusCmd(socketPath string, interval time.Duration) tea.Cmd {
 		}
 		defer conn.Close()
 
-		client := ipcgen.NewSyncStatusClient(conn)
-		resp, err := client.GetStatus(ctx, &ipcgen.Empty{})
+		client := ipcgen.NewSyncStatusServiceClient(conn)
+		resp, err := client.GetStatus(ctx, &ipcgen.GetStatusRequest{})
 		if err != nil {
 			return errMsg{err: err}
 		}

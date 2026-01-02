@@ -19,8 +19,8 @@ import (
 
 // Server wraps the gRPC server for daemon IPC.
 type Server struct {
-	ipcgen.UnimplementedDaemonControlServer
-	ipcgen.UnimplementedSyncStatusServer
+	ipcgen.UnimplementedDaemonControlServiceServer
+	ipcgen.UnimplementedSyncStatusServiceServer
 	ipcgen.UnimplementedAuthServiceServer
 
 	cfg    *config.Config
@@ -67,8 +67,8 @@ func (s *Server) Start(ctx context.Context) error {
 	s.listener = ln
 
 	s.grpcServer = grpc.NewServer()
-	ipcgen.RegisterDaemonControlServer(s.grpcServer, s)
-	ipcgen.RegisterSyncStatusServer(s.grpcServer, s)
+	ipcgen.RegisterDaemonControlServiceServer(s.grpcServer, s)
+	ipcgen.RegisterSyncStatusServiceServer(s.grpcServer, s)
 	ipcgen.RegisterAuthServiceServer(s.grpcServer, s)
 
 	errCh := make(chan error, 1)
@@ -98,7 +98,7 @@ func (s *Server) Stop() {
 }
 
 // Ping returns daemon version.
-func (s *Server) Ping(ctx context.Context, _ *ipcgen.Empty) (*ipcgen.PingResponse, error) {
+func (s *Server) Ping(ctx context.Context, _ *ipcgen.PingRequest) (*ipcgen.PingResponse, error) {
 	_ = ctx
 	return &ipcgen.PingResponse{Version: s.ver}, nil
 }
@@ -110,20 +110,20 @@ func (s *Server) Shutdown(ctx context.Context, _ *ipcgen.ShutdownRequest) (*ipcg
 }
 
 // GetStatus returns a basic status snapshot.
-func (s *Server) GetStatus(ctx context.Context, _ *ipcgen.Empty) (*ipcgen.StatusResponse, error) {
+func (s *Server) GetStatus(ctx context.Context, _ *ipcgen.GetStatusRequest) (*ipcgen.GetStatusResponse, error) {
 	_ = ctx
 	statusSnapshot := s.status.Current()
-	return &ipcgen.StatusResponse{Status: toProtoStatus(statusSnapshot), RequestId: "req-0"}, nil
+	return &ipcgen.GetStatusResponse{Status: toProtoStatus(statusSnapshot), RequestId: "req-0"}, nil
 }
 
 // WatchStatus streams periodic status updates until the client disconnects.
-func (s *Server) WatchStatus(_ *ipcgen.Empty, stream ipcgen.SyncStatus_WatchStatusServer) error {
+func (s *Server) WatchStatus(_ *ipcgen.WatchStatusRequest, stream ipcgen.SyncStatusService_WatchStatusServer) error {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		statusSnapshot := s.status.Current()
-		if err := stream.Send(&ipcgen.StatusResponse{Status: toProtoStatus(statusSnapshot), RequestId: "req-0"}); err != nil {
+		if err := stream.Send(&ipcgen.WatchStatusResponse{Status: toProtoStatus(statusSnapshot), RequestId: "req-0"}); err != nil {
 			return err
 		}
 		select {
@@ -135,9 +135,9 @@ func (s *Server) WatchStatus(_ *ipcgen.Empty, stream ipcgen.SyncStatus_WatchStat
 }
 
 // GetAuthState returns a stub auth state.
-func (s *Server) GetAuthState(ctx context.Context, _ *ipcgen.Empty) (*ipcgen.AuthStateResponse, error) {
+func (s *Server) GetAuthState(ctx context.Context, _ *ipcgen.GetAuthStateRequest) (*ipcgen.GetAuthStateResponse, error) {
 	_ = ctx
-	return &ipcgen.AuthStateResponse{SignedIn: false, RequestId: "req-0"}, nil
+	return &ipcgen.GetAuthStateResponse{SignedIn: false, RequestId: "req-0"}, nil
 }
 
 func toProtoStatus(snapshot status.Snapshot) *ipcgen.Status {
@@ -152,13 +152,13 @@ func toProtoStatus(snapshot status.Snapshot) *ipcgen.Status {
 func mapState(state status.State) ipcgen.Status_SyncState {
 	switch state {
 	case status.StateIdle:
-		return ipcgen.Status_IDLE
+		return ipcgen.Status_SYNC_STATE_IDLE
 	case status.StateSyncing:
-		return ipcgen.Status_SYNCING
+		return ipcgen.Status_SYNC_STATE_SYNCING
 	case status.StateError:
-		return ipcgen.Status_ERROR
+		return ipcgen.Status_SYNC_STATE_ERROR
 	case status.StatePaused:
-		return ipcgen.Status_PAUSED
+		return ipcgen.Status_SYNC_STATE_PAUSED
 	default:
 		return ipcgen.Status_SYNC_STATE_UNSPECIFIED
 	}

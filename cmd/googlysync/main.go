@@ -111,8 +111,8 @@ func runPing(args []string) {
 	}
 	defer conn.Close()
 
-	client := ipcgen.NewDaemonControlClient(conn)
-	resp, err := client.Ping(ctx, &ipcgen.Empty{})
+	client := ipcgen.NewDaemonControlServiceClient(conn)
+	resp, err := client.Ping(ctx, &ipcgen.PingRequest{})
 	if err != nil {
 		fmt.Printf("ping error: %v\n", err)
 		return
@@ -156,8 +156,8 @@ func printStatusOnce(socketPath string) {
 	}
 	defer conn.Close()
 
-	client := ipcgen.NewSyncStatusClient(conn)
-	resp, err := client.GetStatus(ctx, &ipcgen.Empty{})
+	client := ipcgen.NewSyncStatusServiceClient(conn)
+	resp, err := client.GetStatus(ctx, &ipcgen.GetStatusRequest{})
 	if err != nil {
 		fmt.Printf("status error: %v\n", err)
 		return
