@@ -151,18 +151,24 @@ func (s *Service) bootstrapState(ctx context.Context) {
 	}
 
 	var primary *storage.Account
+	var fallback *storage.Account
 	for i := range accounts {
+		ref, err := s.store.GetTokenRef(ctx, accounts[i].ID)
+		if err != nil || ref == nil {
+			continue
+		}
 		if accounts[i].IsPrimary {
 			primary = &accounts[i]
 			break
 		}
+		if fallback == nil {
+			fallback = &accounts[i]
+		}
 	}
 	if primary == nil {
-		primary = &accounts[0]
+		primary = fallback
 	}
-
-	ref, err := s.store.GetTokenRef(ctx, primary.ID)
-	if err != nil || ref == nil {
+	if primary == nil {
 		return
 	}
 

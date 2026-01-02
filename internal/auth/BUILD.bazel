@@ -1,4 +1,5 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("@rules_go//go:def.bzl", "go_test")
 
 go_library(
     name = "auth",
@@ -14,6 +15,17 @@ go_library(
         "@com_github_zalando_go_keyring//:go_default_library",
         "@org_golang_x_oauth2//:go_default_library",
         "@org_golang_x_oauth2//google:go_default_library",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_test(
+    name = "auth_test",
+    srcs = ["auth_test.go"],
+    embed = [":auth"],
+    deps = [
+        "//internal/config",
+        "//internal/storage",
         "@org_uber_go_zap//:zap",
     ],
 )
