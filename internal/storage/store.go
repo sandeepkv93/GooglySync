@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -87,6 +89,12 @@ func (s *Storage) UpsertAccount(ctx context.Context, acct *Account) error {
 	if acct == nil {
 		return nil
 	}
+	if acct.ID == "" {
+		return fmt.Errorf("account id cannot be empty")
+	}
+	if acct.Email == "" {
+		return fmt.Errorf("account email cannot be empty")
+	}
 	now := time.Now()
 	if acct.CreatedAt.IsZero() {
 		acct.CreatedAt = now
@@ -167,6 +175,12 @@ func (s *Storage) UpsertTokenRef(ctx context.Context, ref *TokenRef) error {
 	if ref == nil {
 		return nil
 	}
+	if ref.AccountID == "" {
+		return fmt.Errorf("token_ref account_id cannot be empty")
+	}
+	if ref.KeyID == "" {
+		return fmt.Errorf("token_ref key_id cannot be empty")
+	}
 	now := time.Now()
 	if ref.UpdatedAt.IsZero() {
 		ref.UpdatedAt = now
@@ -207,6 +221,9 @@ func (s *Storage) GetTokenRef(ctx context.Context, accountID string) (*TokenRef,
 func (s *Storage) UpsertSyncState(ctx context.Context, state *SyncState) error {
 	if state == nil {
 		return nil
+	}
+	if state.AccountID == "" {
+		return fmt.Errorf("sync_state account_id cannot be empty")
 	}
 	now := time.Now()
 	if state.UpdatedAt.IsZero() {
@@ -250,6 +267,18 @@ func (s *Storage) GetSyncState(ctx context.Context, accountID string) (*SyncStat
 func (s *Storage) UpsertFile(ctx context.Context, file *FileRecord) error {
 	if file == nil {
 		return nil
+	}
+	if file.ID == "" {
+		return fmt.Errorf("file id cannot be empty")
+	}
+	if file.AccountID == "" {
+		return fmt.Errorf("file account_id cannot be empty")
+	}
+	if file.Path == "" {
+		return fmt.Errorf("file path cannot be empty")
+	}
+	if file.DriveID == "" {
+		return fmt.Errorf("file drive_id cannot be empty")
 	}
 	now := time.Now()
 	if file.CreatedAt.IsZero() {
@@ -324,13 +353,14 @@ func (s *Storage) ListFilesByPrefix(ctx context.Context, accountID, prefix strin
 	if limit <= 0 {
 		limit = 500
 	}
+	pattern := escapeLike(prefix) + "%"
 	rows, err := s.DB.QueryContext(ctx, `
 		SELECT id, account_id, path, drive_id, etag, checksum, size, modified_at, created_at
 		FROM files
-		WHERE account_id = ? AND path LIKE ?
+		WHERE account_id = ? AND path LIKE ? ESCAPE '\'
 		ORDER BY path ASC
 		LIMIT ?
-	`, accountID, prefix+"%", limit)
+	`, accountID, pattern, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -354,6 +384,18 @@ func (s *Storage) ListFilesByPrefix(ctx context.Context, accountID, prefix strin
 func (s *Storage) UpsertFolder(ctx context.Context, folder *Folder) error {
 	if folder == nil {
 		return nil
+	}
+	if folder.ID == "" {
+		return fmt.Errorf("folder id cannot be empty")
+	}
+	if folder.AccountID == "" {
+		return fmt.Errorf("folder account_id cannot be empty")
+	}
+	if folder.Path == "" {
+		return fmt.Errorf("folder path cannot be empty")
+	}
+	if folder.DriveID == "" {
+		return fmt.Errorf("folder drive_id cannot be empty")
 	}
 	now := time.Now()
 	if folder.CreatedAt.IsZero() {
@@ -380,13 +422,14 @@ func (s *Storage) ListFoldersByPrefix(ctx context.Context, accountID, prefix str
 	if limit <= 0 {
 		limit = 500
 	}
+	pattern := escapeLike(prefix) + "%"
 	rows, err := s.DB.QueryContext(ctx, `
 		SELECT id, account_id, path, drive_id, parent_id, modified_at, created_at
 		FROM folders
-		WHERE account_id = ? AND path LIKE ?
+		WHERE account_id = ? AND path LIKE ? ESCAPE '\'
 		ORDER BY path ASC
 		LIMIT ?
-	`, accountID, prefix+"%", limit)
+	`, accountID, pattern, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -410,6 +453,12 @@ func (s *Storage) ListFoldersByPrefix(ctx context.Context, accountID, prefix str
 func (s *Storage) UpsertSharedDrive(ctx context.Context, drive *SharedDrive) error {
 	if drive == nil {
 		return nil
+	}
+	if drive.ID == "" {
+		return fmt.Errorf("shared_drive id cannot be empty")
+	}
+	if drive.Name == "" {
+		return fmt.Errorf("shared_drive name cannot be empty")
 	}
 	now := time.Now()
 	if drive.CreatedAt.IsZero() {
@@ -458,6 +507,18 @@ func (s *Storage) ListSharedDrives(ctx context.Context) ([]SharedDrive, error) {
 func (s *Storage) AddPendingOp(ctx context.Context, op *PendingOp) error {
 	if op == nil {
 		return nil
+	}
+	if op.ID == "" {
+		return fmt.Errorf("pending_op id cannot be empty")
+	}
+	if op.AccountID == "" {
+		return fmt.Errorf("pending_op account_id cannot be empty")
+	}
+	if op.Path == "" {
+		return fmt.Errorf("pending_op path cannot be empty")
+	}
+	if op.OpType == "" {
+		return fmt.Errorf("pending_op op_type cannot be empty")
 	}
 	now := time.Now()
 	if op.CreatedAt.IsZero() {
@@ -556,4 +617,13 @@ func boolToInt(val bool) int {
 
 func intToBool(val int) bool {
 	return val != 0
+}
+
+func escapeLike(value string) string {
+	replacer := strings.NewReplacer(
+		"\\", "\\\\",
+		"%", "\\%",
+		"_", "\\_",
+	)
+	return replacer.Replace(value)
 }

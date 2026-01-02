@@ -134,6 +134,18 @@ func TestAccountDuplicateEmail(t *testing.T) {
 	}
 }
 
+func TestAccountValidation(t *testing.T) {
+	store := newTestStorage(t)
+	ctx := context.Background()
+
+	if err := store.UpsertAccount(ctx, &Account{ID: "", Email: "user@example.com"}); err == nil {
+		t.Fatal("expected error for empty account id")
+	}
+	if err := store.UpsertAccount(ctx, &Account{ID: "acct-1", Email: ""}); err == nil {
+		t.Fatal("expected error for empty account email")
+	}
+}
+
 func TestAccountCascadeDelete(t *testing.T) {
 	store := newTestStorage(t)
 	ctx := context.Background()
@@ -300,6 +312,24 @@ func TestFilesAndFolders(t *testing.T) {
 		t.Fatalf("ListFilesByPrefix mismatch: %#v", list)
 	}
 
+	special := &FileRecord{
+		ID:        "file-2",
+		AccountID: "acct-1",
+		Path:      "docs/100%/file.txt",
+		DriveID:   "drive-2",
+		Size:      8,
+	}
+	if err := store.UpsertFile(ctx, special); err != nil {
+		t.Fatalf("UpsertFile special: %v", err)
+	}
+	escaped, err := store.ListFilesByPrefix(ctx, "acct-1", "docs/100%", 0)
+	if err != nil {
+		t.Fatalf("ListFilesByPrefix escaped: %v", err)
+	}
+	if len(escaped) != 1 || escaped[0].ID != special.ID {
+		t.Fatalf("ListFilesByPrefix escaped mismatch: %#v", escaped)
+	}
+
 	if err := store.DeleteFile(ctx, "acct-1", "docs/report.txt"); err != nil {
 		t.Fatalf("DeleteFile: %v", err)
 	}
@@ -329,6 +359,23 @@ func TestFilesAndFolders(t *testing.T) {
 	}
 	if len(folders) != 1 || folders[0].ID != folder.ID {
 		t.Fatalf("ListFoldersByPrefix mismatch: %#v", folders)
+	}
+
+	specialFolder := &Folder{
+		ID:        "folder-2",
+		AccountID: "acct-1",
+		Path:      "docs/100%/sub",
+		DriveID:   "drive-folder-2",
+	}
+	if err := store.UpsertFolder(ctx, specialFolder); err != nil {
+		t.Fatalf("UpsertFolder special: %v", err)
+	}
+	escapedFolders, err := store.ListFoldersByPrefix(ctx, "acct-1", "docs/100%", 0)
+	if err != nil {
+		t.Fatalf("ListFoldersByPrefix escaped: %v", err)
+	}
+	if len(escapedFolders) != 1 || escapedFolders[0].ID != specialFolder.ID {
+		t.Fatalf("ListFoldersByPrefix escaped mismatch: %#v", escapedFolders)
 	}
 }
 
