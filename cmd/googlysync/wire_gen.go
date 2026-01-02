@@ -32,7 +32,7 @@ func InitializeDaemon(opts config.Options) (*daemon.Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
-	service, err := auth.NewService(logger, storageStorage)
+	service, err := auth.NewService(logger, configConfig, storageStorage)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func InitializeDaemon(opts config.Options) (*daemon.Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
-	server, err := ipc.NewServer(configConfig, logger, store)
+	server, err := ipc.NewServer(configConfig, logger, store, service)
 	if err != nil {
 		return nil, err
 	}

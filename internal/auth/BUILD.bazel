@@ -2,11 +2,18 @@ load("@rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "auth",
-    srcs = ["auth.go"],
+    srcs = [
+        "auth.go",
+        "oauth.go",
+    ],
     importpath = "github.com/sandeepkv93/googlysync/internal/auth",
     visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/config",
         "//internal/storage",
+        "@com_github_zalando_go_keyring//:go_default_library",
+        "@org_golang_x_oauth2//:go_default_library",
+        "@org_golang_x_oauth2//google:go_default_library",
         "@org_uber_go_zap//:zap",
     ],
 )
