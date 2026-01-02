@@ -127,6 +127,14 @@ func (s *Storage) GetAccount(ctx context.Context, id string) (*Account, error) {
 	return &acct, nil
 }
 
+// DeleteAccount removes an account (and cascades dependent rows).
+func (s *Storage) DeleteAccount(ctx context.Context, id string) error {
+	_, err := s.DB.ExecContext(ctx, `
+		DELETE FROM accounts WHERE id = ?
+	`, id)
+	return err
+}
+
 // ListAccounts returns all configured accounts.
 func (s *Storage) ListAccounts(ctx context.Context) ([]Account, error) {
 	rows, err := s.DB.QueryContext(ctx, `
@@ -271,6 +279,25 @@ func (s *Storage) GetFileByPath(ctx context.Context, accountID, path string) (*F
 		SELECT id, account_id, path, drive_id, etag, checksum, size, modified_at, created_at
 		FROM files WHERE account_id = ? AND path = ?
 	`, accountID, path)
+	var file FileRecord
+	var modifiedAt, createdAt int64
+	if err := row.Scan(&file.ID, &file.AccountID, &file.Path, &file.DriveID, &file.ETag, &file.Checksum, &file.Size, &modifiedAt, &createdAt); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	file.ModifiedAt = fromUnix(modifiedAt)
+	file.CreatedAt = fromUnix(createdAt)
+	return &file, nil
+}
+
+// GetFileByDriveID returns a file record by account and Drive ID.
+func (s *Storage) GetFileByDriveID(ctx context.Context, accountID, driveID string) (*FileRecord, error) {
+	row := s.DB.QueryRowContext(ctx, `
+		SELECT id, account_id, path, drive_id, etag, checksum, size, modified_at, created_at
+		FROM files WHERE account_id = ? AND drive_id = ?
+	`, accountID, driveID)
 	var file FileRecord
 	var modifiedAt, createdAt int64
 	if err := row.Scan(&file.ID, &file.AccountID, &file.Path, &file.DriveID, &file.ETag, &file.Checksum, &file.Size, &modifiedAt, &createdAt); err != nil {

@@ -27,6 +27,16 @@ func newTestStorage(t *testing.T) *Storage {
 	return store
 }
 
+func countRows(t *testing.T, store *Storage, query string, args ...any) int {
+	t.Helper()
+	row := store.DB.QueryRow(query, args...)
+	var count int
+	if err := row.Scan(&count); err != nil {
+		t.Fatalf("countRows scan: %v", err)
+	}
+	return count
+}
+
 func TestAccountAndTokenRef(t *testing.T) {
 	store := newTestStorage(t)
 	ctx := context.Background()
@@ -56,12 +66,36 @@ func TestAccountAndTokenRef(t *testing.T) {
 		t.Fatalf("GetAccount times mismatch: %#v", got)
 	}
 
+	updatedAt2 := updatedAt.Add(2 * time.Second)
+	acct.DisplayName = "Updated User"
+	acct.UpdatedAt = updatedAt2
+	if err := store.UpsertAccount(ctx, acct); err != nil {
+		t.Fatalf("UpsertAccount update: %v", err)
+	}
+	updated, err := store.GetAccount(ctx, "acct-1")
+	if err != nil {
+		t.Fatalf("GetAccount after update: %v", err)
+	}
+	if !updated.CreatedAt.Equal(createdAt) {
+		t.Fatalf("CreatedAt changed on update: %#v", updated)
+	}
+	if !updated.UpdatedAt.Equal(updatedAt2) {
+		t.Fatalf("UpdatedAt not updated: %#v", updated)
+	}
+
 	list, err := store.ListAccounts(ctx)
 	if err != nil {
 		t.Fatalf("ListAccounts: %v", err)
 	}
-	if len(list) != 1 || list[0].ID != acct.ID {
-		t.Fatalf("ListAccounts mismatch: %#v", list)
+	found := false
+	for _, item := range list {
+		if item.ID == acct.ID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("ListAccounts missing account: %#v", list)
 	}
 
 	expiry := time.Unix(1_700_001_000, 0)
@@ -85,6 +119,82 @@ func TestAccountAndTokenRef(t *testing.T) {
 	}
 	if !gotRef.Expiry.Equal(expiry) {
 		t.Fatalf("GetTokenRef expiry mismatch: %#v", gotRef)
+	}
+}
+
+func TestAccountDuplicateEmail(t *testing.T) {
+	store := newTestStorage(t)
+	ctx := context.Background()
+
+	if err := store.UpsertAccount(ctx, &Account{ID: "acct-1", Email: "user@example.com"}); err != nil {
+		t.Fatalf("UpsertAccount: %v", err)
+	}
+	if err := store.UpsertAccount(ctx, &Account{ID: "acct-2", Email: "user@example.com"}); err == nil {
+		t.Fatal("expected duplicate email constraint error")
+	}
+}
+
+func TestAccountCascadeDelete(t *testing.T) {
+	store := newTestStorage(t)
+	ctx := context.Background()
+
+	if err := store.UpsertAccount(ctx, &Account{ID: "acct-1", Email: "user@example.com"}); err != nil {
+		t.Fatalf("UpsertAccount: %v", err)
+	}
+	if err := store.UpsertTokenRef(ctx, &TokenRef{AccountID: "acct-1", KeyID: "key-1"}); err != nil {
+		t.Fatalf("UpsertTokenRef: %v", err)
+	}
+	if err := store.UpsertSyncState(ctx, &SyncState{AccountID: "acct-1", StartPageToken: "token-1"}); err != nil {
+		t.Fatalf("UpsertSyncState: %v", err)
+	}
+	if err := store.AddPendingOp(ctx, &PendingOp{ID: "op-1", AccountID: "acct-1", Path: "a", OpType: "upload"}); err != nil {
+		t.Fatalf("AddPendingOp: %v", err)
+	}
+	if err := store.UpsertFolder(ctx, &Folder{ID: "folder-1", AccountID: "acct-1", Path: "docs", DriveID: "drive-folder-1"}); err != nil {
+		t.Fatalf("UpsertFolder: %v", err)
+	}
+
+	if err := store.DeleteAccount(ctx, "acct-1"); err != nil {
+		t.Fatalf("DeleteAccount: %v", err)
+	}
+
+	if count := countRows(t, store, "SELECT COUNT(1) FROM accounts WHERE id = ?", "acct-1"); count != 0 {
+		t.Fatalf("expected account deleted, count=%d", count)
+	}
+	if count := countRows(t, store, "SELECT COUNT(1) FROM token_refs WHERE account_id = ?", "acct-1"); count != 0 {
+		t.Fatalf("expected token_refs deleted, count=%d", count)
+	}
+	if count := countRows(t, store, "SELECT COUNT(1) FROM sync_state WHERE account_id = ?", "acct-1"); count != 0 {
+		t.Fatalf("expected sync_state deleted, count=%d", count)
+	}
+	if count := countRows(t, store, "SELECT COUNT(1) FROM pending_ops WHERE account_id = ?", "acct-1"); count != 0 {
+		t.Fatalf("expected pending_ops deleted, count=%d", count)
+	}
+	if count := countRows(t, store, "SELECT COUNT(1) FROM folders WHERE account_id = ?", "acct-1"); count != 0 {
+		t.Fatalf("expected folders deleted, count=%d", count)
+	}
+}
+
+func TestAccountConcurrentUpserts(t *testing.T) {
+	store := newTestStorage(t)
+	ctx := context.Background()
+
+	errCh := make(chan error, 10)
+	for i := 0; i < 10; i++ {
+		go func(idx int) {
+			errCh <- store.UpsertAccount(ctx, &Account{
+				ID:          "acct-1",
+				Email:       "user@example.com",
+				DisplayName: "User",
+				IsPrimary:   idx%2 == 0,
+			})
+		}(i)
+	}
+
+	for i := 0; i < 10; i++ {
+		if err := <-errCh; err != nil {
+			t.Fatalf("UpsertAccount concurrent: %v", err)
+		}
 	}
 }
 
@@ -154,6 +264,32 @@ func TestFilesAndFolders(t *testing.T) {
 	}
 	if !got.ModifiedAt.Equal(modifiedAt) {
 		t.Fatalf("GetFileByPath time mismatch: %#v", got)
+	}
+
+	gotByDrive, err := store.GetFileByDriveID(ctx, "acct-1", "drive-1")
+	if err != nil {
+		t.Fatalf("GetFileByDriveID: %v", err)
+	}
+	if gotByDrive == nil || gotByDrive.ID != file.ID {
+		t.Fatalf("GetFileByDriveID mismatch: %#v", gotByDrive)
+	}
+
+	modifiedAt2 := modifiedAt.Add(2 * time.Second)
+	file.ETag = "etag-2"
+	file.ModifiedAt = modifiedAt2
+	file.CreatedAt = time.Time{}
+	if err := store.UpsertFile(ctx, file); err != nil {
+		t.Fatalf("UpsertFile update: %v", err)
+	}
+	updated, err := store.GetFileByPath(ctx, "acct-1", "docs/report.txt")
+	if err != nil {
+		t.Fatalf("GetFileByPath after update: %v", err)
+	}
+	if !updated.CreatedAt.Equal(modifiedAt) {
+		t.Fatalf("File CreatedAt changed on update: %#v", updated)
+	}
+	if !updated.ModifiedAt.Equal(modifiedAt2) {
+		t.Fatalf("File ModifiedAt not updated: %#v", updated)
 	}
 
 	list, err := store.ListFilesByPrefix(ctx, "acct-1", "docs/", 0)

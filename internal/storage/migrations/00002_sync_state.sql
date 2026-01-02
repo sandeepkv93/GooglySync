@@ -1,9 +1,4 @@
 -- +goose Up
-ALTER TABLE files ADD COLUMN account_id TEXT NOT NULL DEFAULT '';
-DROP INDEX IF EXISTS idx_files_path;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_files_account_path ON files(account_id, path);
-CREATE INDEX IF NOT EXISTS idx_files_account_drive_id ON files(account_id, drive_id);
-
 CREATE TABLE IF NOT EXISTS accounts (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL,
@@ -13,6 +8,14 @@ CREATE TABLE IF NOT EXISTS accounts (
   updated_at INTEGER NOT NULL DEFAULT 0
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_email ON accounts(email);
+INSERT OR IGNORE INTO accounts (id, email, display_name, is_primary, created_at, updated_at)
+  VALUES ('default', 'default@local', 'Default', 1, strftime('%s','now'), strftime('%s','now'));
+
+ALTER TABLE files ADD COLUMN account_id TEXT NOT NULL DEFAULT 'default';
+UPDATE files SET account_id = 'default' WHERE account_id = '' OR account_id IS NULL;
+DROP INDEX IF EXISTS idx_files_path;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_files_account_path ON files(account_id, path);
+CREATE INDEX IF NOT EXISTS idx_files_account_drive_id ON files(account_id, drive_id);
 
 CREATE TABLE IF NOT EXISTS token_refs (
   account_id TEXT PRIMARY KEY,
