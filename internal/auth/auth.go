@@ -15,8 +15,6 @@ import (
 	"github.com/sandeepkv93/googlysync/internal/storage"
 )
 
-const keyringServiceName = "googlysync"
-
 // State captures the current auth status.
 type State struct {
 	SignedIn bool
@@ -28,6 +26,7 @@ type Service struct {
 	logger *zap.Logger
 	cfg    *config.Config
 	store  *storage.Storage
+	krSvc  string
 
 	mu    sync.Mutex
 	state State
@@ -45,7 +44,11 @@ func NewService(logger *zap.Logger, cfg *config.Config, store *storage.Storage) 
 		return nil, errors.New("auth: storage is required")
 	}
 
-	svc := &Service{logger: logger, cfg: cfg, store: store}
+	krSvc := cfg.AppName
+	if krSvc == "" {
+		krSvc = "googlysync"
+	}
+	svc := &Service{logger: logger, cfg: cfg, store: store, krSvc: krSvc}
 	svc.bootstrapState(context.Background())
 	logger.Info("auth service initialized")
 	return svc, nil
@@ -80,7 +83,7 @@ func (s *Service) SignIn(ctx context.Context, scopes []string) error {
 
 	accountID := claims.Sub
 	if accountID == "" {
-		accountID = "default"
+		return errors.New("oauth sub claim missing")
 	}
 	account := storage.Account{
 		ID:          accountID,
@@ -98,10 +101,6 @@ func (s *Service) SignIn(ctx context.Context, scopes []string) error {
 	if refreshToken == "" {
 		return errors.New("refresh token missing; re-auth with consent")
 	}
-	if err := keyring.Set(keyringServiceName, accountID, refreshToken); err != nil {
-		return err
-	}
-
 	ref := storage.TokenRef{
 		AccountID: accountID,
 		KeyID:     accountID,
@@ -111,6 +110,10 @@ func (s *Service) SignIn(ctx context.Context, scopes []string) error {
 		UpdatedAt: time.Now(),
 	}
 	if err := s.store.UpsertTokenRef(ctx, &ref); err != nil {
+		return err
+	}
+	if err := keyring.Set(s.krSvc, accountID, refreshToken); err != nil {
+		_ = s.store.DeleteTokenRef(ctx, accountID)
 		return err
 	}
 
@@ -126,7 +129,7 @@ func (s *Service) SignOut(ctx context.Context, accountID string) error {
 	if accountID == "" {
 		return errors.New("account id is required")
 	}
-	_ = keyring.Delete(keyringServiceName, accountID)
+	_ = keyring.Delete(s.krSvc, accountID)
 	if err := s.store.DeleteAccount(ctx, accountID); err != nil {
 		return err
 	}

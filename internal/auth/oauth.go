@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	neturl "net/url"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -68,6 +69,9 @@ func runOAuthFlow(ctx context.Context, cfg *config.Config, scopes []string, logg
 	server := &http.Server{
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       15 * time.Second,
 	}
 	mux.HandleFunc("/oauth/callback", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("state") != state {
@@ -132,6 +136,9 @@ func runOAuthFlow(ctx context.Context, cfg *config.Config, scopes []string, logg
 			logger.Warn("id_token parse failed", zap.Error(err))
 		} else {
 			claims = decoded
+			// NOTE: We do not validate ID token signatures here because the claims
+			// are used only for display metadata (email/name). Do not use these
+			// fields for authorization decisions without signature verification.
 		}
 	}
 
@@ -139,6 +146,13 @@ func runOAuthFlow(ctx context.Context, cfg *config.Config, scopes []string, logg
 }
 
 func openBrowser(url string) error {
+	parsed, err := neturl.Parse(url)
+	if err != nil {
+		return fmt.Errorf("invalid url: %w", err)
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return fmt.Errorf("invalid url scheme: %s", parsed.Scheme)
+	}
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "darwin":
@@ -146,6 +160,9 @@ func openBrowser(url string) error {
 	case "windows":
 		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
 	default:
+		if _, err := exec.LookPath("xdg-open"); err != nil {
+			return fmt.Errorf("xdg-open not found: %w", err)
+		}
 		cmd = exec.Command("xdg-open", url)
 	}
 	return cmd.Start()

@@ -67,6 +67,71 @@ func TestNewServiceBootstrapsState(t *testing.T) {
 	}
 }
 
+func TestBootstrapWithoutTokenRef(t *testing.T) {
+	store := newTestStore(t)
+	ctx := t.Context()
+
+	account := storage.Account{
+		ID:        "acct-1",
+		Email:     "user@example.com",
+		IsPrimary: true,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if err := store.UpsertAccount(ctx, &account); err != nil {
+		t.Fatalf("UpsertAccount: %v", err)
+	}
+
+	svc, err := NewService(zap.NewNop(), &config.Config{}, store)
+	if err != nil {
+		t.Fatalf("NewService: %v", err)
+	}
+	if svc.State().SignedIn {
+		t.Fatal("expected SignedIn false without token ref")
+	}
+}
+
+func TestBootstrapSelectsPrimaryWithToken(t *testing.T) {
+	store := newTestStore(t)
+	ctx := t.Context()
+
+	primary := storage.Account{
+		ID:        "acct-primary",
+		Email:     "primary@example.com",
+		IsPrimary: true,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	secondary := storage.Account{
+		ID:        "acct-secondary",
+		Email:     "secondary@example.com",
+		IsPrimary: false,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if err := store.UpsertAccount(ctx, &secondary); err != nil {
+		t.Fatalf("UpsertAccount secondary: %v", err)
+	}
+	if err := store.UpsertAccount(ctx, &primary); err != nil {
+		t.Fatalf("UpsertAccount primary: %v", err)
+	}
+	if err := store.UpsertTokenRef(ctx, &storage.TokenRef{AccountID: secondary.ID, KeyID: secondary.ID}); err != nil {
+		t.Fatalf("UpsertTokenRef secondary: %v", err)
+	}
+	if err := store.UpsertTokenRef(ctx, &storage.TokenRef{AccountID: primary.ID, KeyID: primary.ID}); err != nil {
+		t.Fatalf("UpsertTokenRef primary: %v", err)
+	}
+
+	svc, err := NewService(zap.NewNop(), &config.Config{}, store)
+	if err != nil {
+		t.Fatalf("NewService: %v", err)
+	}
+	state := svc.State()
+	if !state.SignedIn || state.Account.ID != primary.ID {
+		t.Fatalf("expected primary account, got %#v", state)
+	}
+}
+
 func TestScopeStringDedupes(t *testing.T) {
 	got := scopeString([]string{"a", "b", "a", "", "b"})
 	if got != "a b" {
